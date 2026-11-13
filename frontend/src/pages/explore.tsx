@@ -1,0 +1,42 @@
+import { PostList } from '@/components/post/post-list'
+import { TrendingTags } from '@/components/trending-tags'
+import { useBookmarkedPostIds, useFeed, useLikedPostIds } from '@/hooks/use-pootd'
+
+export function ExplorePage() {
+  const feed = useFeed(undefined, 'top')
+  const likedIds = useLikedPostIds(feed.data?.map((post) => post.id) ?? [])
+  const bookmarkedIds = useBookmarkedPostIds(feed.data?.map((post) => post.id) ?? [])
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="font-heading text-xl font-semibold tracking-tight">استكشف</h1>
+        <p className="mt-1 max-w-lg text-sm leading-7 text-muted-foreground">
+          تصفّح ما يتحدث عنه المجتمع، والمنشورات الأكثر تفاعلًا.
+        </p>
+      </header>
+
+      <section>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-semibold">وسوم رائجة</h2>
+          <span className="text-xs text-muted-foreground">آخر 30 يومًا</span>
+        </div>
+        <TrendingTags />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold">الأكثر إعجابًا</h2>
+        <PostList
+          posts={feed.data}
+          isLoading={feed.isLoading}
+          error={feed.error}
+          likedIds={likedIds.data}
+          bookmarkedIds={bookmarkedIds.data}
+          onRetry={() => void feed.refetch()}
+          emptyTitle="ما فيه منشورات بعد"
+          emptyDescription="تظهر المنشورات الأعلى هنا بعد ما يبدأ المجتمع بالتفاعل."
+        />
+      </section>
+    </div>
+  )
+}

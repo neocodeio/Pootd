@@ -1,0 +1,421 @@
+import { supabase } from './supabase'
+import type {
+  CommentWithAuthor,
+  PostWithAuthor,
+  Profile,
+  ProfileStats,
+  ProfileUpdate,
+  SortOption,
+  TrendingTag,
+} from './types'
+import { normalizeTag, normalizeUsername, sanitizeSearchTerm } from './validation'
+
+function throwIfError(error: { message: string } | null): void {
+  if (error) throw new Error(error.message)
+}
+
+export async function getFeed(options: {
+  tag?: string
+  sort?: SortOption
+  limit?: number
+} = {}): Promise<PostWithAuthor[]> {
+  let query = supabase
+    .from('posts')
+    .select('*, author:profiles!posts_author_id_fkey(*)')
+    .limit(options.limit ?? 30)
+
+  if (options.tag) {
+    query = query.contains('tags', [normalizeTag(options.tag)])
+  }
+
+  if (options.sort === 'top') {
+    query = query
+      .order('like_count', { ascending: false })
+      .order('created_at', { ascending: false })
+  } else {
+    query = query.order('created_at', { ascending: false })
+  }
+
+  const { data, error } = await query
+  throwIfError(error)
+  return (data ?? []) as unknown as PostWithAuthor[]
+}
+
+export async function getPost(postId: string): Promise<PostWithAuthor | null> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*, author:profiles!posts_author_id_fkey(*)')
+    .eq('id', postId)
+    .maybeSingle()
+
+  throwIfError(error)
+  return (data as unknown as PostWithAuthor | null) ?? null
+}
+
+export async function getUserPosts(userId: string, limit = 30): Promise<PostWithAuthor[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*, author:profiles!posts_author_id_fkey(*)')
+    .eq('author_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  throwIfError(error)
+  return (data ?? []) as unknown as PostWithAuthor[]
+}
+
+export async function getLikedPosts(userId: string, limit = 30): Promise<PostWithAuthor[]> {
+  const { data, error } = await supabase
+    .from('likes')
+    .select('post:posts!likes_post_id_fkey(*, author:profiles!posts_author_id_fkey(*))')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  throwIfError(error)
+  const rows = (data ?? []) as unknown as { post: PostWithAuthor | null }[]
+  return rows.map((row) => row.post).filter((post): post is PostWithAuthor => Boolean(post))
+}
+
+export async function getLikedPostIds(
+  postIds: string[],
+  userId: string,
+): Promise<string[]> {
+  if (postIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('likes')
+    .select('post_id')
+    .eq('user_id', userId)
+    .in('post_id', postIds)
+
+  throwIfError(error)
+  return ((data ?? []) as { post_id: string }[]).map((row) => row.post_id)
+}
+
+export async function isPostLiked(postId: string, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('likes')
+    .select('post_id')
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  throwIfError(error)
+  return Boolean(data)
+}
+
+export async function toggleLike(
+  postId: string,
+  userId: string,
+  currentlyLiked: boolean,
+): Promise<void> {
+  if (currentlyLiked) {
+    const { error } = await supabase
+      .from('likes')
+      .delete()
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+    throwIfError(error)
+    return
+  }
+
+  const { error } = await supabase.from('likes').insert({
+    post_id: postId,
+    user_id: userId,
+  })
+
+  if (error && error.code !== '23505') throw new Error(error.message)
+}
+
+export async function createPost(
+  userId: string,
+  content: string,
+  tags: string[],
+): Promise<PostWithAuthor> {
+  const { data, error } = await supabase
+    .from('posts')
+    .insert({ author_id: userId, content: content.trim(), tags })
+    .select('*, author:profiles!posts_author_id_fkey(*)')
+    .single()
+
+  throwIfError(error)
+  return data as unknown as PostWithAuthor
+}
+
+export async function deletePost(postId: string): Promise<void> {
+  const { error } = await supabase.from('posts').delete().eq('id', postId)
+  throwIfError(error)
+}
+
+export async function updatePost(
+  postId: string,
+  content: string,
+  tags: string[],
+): Promise<PostWithAuthor> {
+  const { data, error } = await supabase
+    .from('posts')
+    .update({ content: content.trim(), tags })
+    .eq('id', postId)
+    .select('*, author:profiles!posts_author_id_fkey(*)')
+    .maybeSingle()
+
+  throwIfError(error)
+  if (!data) {
+    throw new Error('ما قدرنا نعدّل المنشور. تأكد إنك صاحب المنشور.')
+  }
+  return data as unknown as PostWithAuthor
+}
+
+export async function searchPosts(query: string, limit = 20): Promise<PostWithAuthor[]> {
+  const term = sanitizeSearchTerm(query)
+  if (term.length < 2) return []
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*, author:profiles!posts_author_id_fkey(*)')
+    .or(`content.ilike.%${term}%,tags.cs.{${term}}`)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  throwIfError(error)
+  return (data ?? []) as unknown as PostWithAuthor[]
+}
+
+export async function searchProfiles(query: string, limit = 12): Promise<Profile[]> {
+  const term = sanitizeSearchTerm(query)
+  if (term.length < 2) return []
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .or(`username.ilike.%${term}%,display_name.ilike.%${term}%`)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  throwIfError(error)
+  return (data ?? []) as Profile[]
+}
+
+export async function getComments(postId: string): Promise<CommentWithAuthor[]> {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*, author:profiles!comments_author_id_fkey(*)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true })
+    .limit(100)
+
+  throwIfError(error)
+  return (data ?? []) as unknown as CommentWithAuthor[]
+}
+
+export async function createComment(
+  postId: string,
+  userId: string,
+  content: string,
+): Promise<CommentWithAuthor> {
+  const { data, error } = await supabase
+    .from('comments')
+    .insert({ post_id: postId, author_id: userId, content: content.trim() })
+    .select('*, author:profiles!comments_author_id_fkey(*)')
+    .single()
+
+  throwIfError(error)
+  return data as unknown as CommentWithAuthor
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const { error } = await supabase.from('comments').delete().eq('id', commentId)
+  throwIfError(error)
+}
+
+export async function getProfileByUsername(username: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('username', normalizeUsername(username))
+    .maybeSingle()
+
+  throwIfError(error)
+  return (data as Profile | null) ?? null
+}
+
+export async function getProfileById(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+
+  throwIfError(error)
+  return (data as Profile | null) ?? null
+}
+
+export async function getProfileStats(userId: string): Promise<ProfileStats> {
+  const { data, error } = await supabase.rpc('get_profile_stats', {
+    profile_id: userId,
+  })
+
+  throwIfError(error)
+  const rows = (data ?? []) as ProfileStats[]
+  const row = rows[0]
+  return {
+    posts: Number(row?.posts ?? 0),
+    likes: Number(row?.likes ?? 0),
+    comments: Number(row?.comments ?? 0),
+  }
+}
+
+export async function getTrendingTags(limit = 8): Promise<TrendingTag[]> {
+  const { data, error } = await supabase.rpc('get_trending_tags', {
+    tag_limit: limit,
+  })
+
+  throwIfError(error)
+  return ((data ?? []) as TrendingTag[]).map((row) => ({
+    tag: row.tag,
+    post_count: Number(row.post_count),
+  }))
+}
+
+export async function updateProfile(
+  userId: string,
+  patch: Partial<ProfileUpdate>,
+): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', userId)
+    .select('*')
+    .single()
+
+  throwIfError(error)
+  return data as Profile
+}
+
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('الملف لازم يكون PNG أو JPG أو WebP.')
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('حجم الصورة لازم يكون 2 ميجابايت أو أقل.')
+  }
+
+  const path = `${userId}/avatar`
+  const { error } = await supabase.storage.from('avatars').upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+    cacheControl: '3600',
+  })
+
+  throwIfError(error)
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  return `${data.publicUrl}?v=${Date.now()}`
+}
+
+export async function uploadCover(userId: string, file: File): Promise<string> {
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('الملف لازم يكون PNG أو JPG أو WebP.')
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('حجم صورة الغلاف لازم يكون 5 ميجابايت أو أقل.')
+  }
+
+  const path = `${userId}/cover`
+  const { error } = await supabase.storage.from('covers').upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+    cacheControl: '3600',
+  })
+
+  throwIfError(error)
+
+  const { data } = supabase.storage.from('covers').getPublicUrl(path)
+  return `${data.publicUrl}?v=${Date.now()}`
+}
+
+export async function deleteCoverFile(userId: string): Promise<void> {
+  const { error } = await supabase.storage.from('covers').remove([`${userId}/cover`])
+  throwIfError(error)
+}
+
+export async function getBookmarkedPostIds(
+  userId: string,
+  postIds: string[],
+): Promise<string[]> {
+  if (!userId || postIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('bookmarks')
+    .select('post_id')
+    .eq('user_id', userId)
+    .in('post_id', postIds)
+
+  throwIfError(error)
+  return ((data ?? []) as { post_id: string }[]).map((row) => row.post_id)
+}
+
+export async function toggleBookmark(
+  postId: string,
+  userId: string,
+  bookmarked: boolean,
+): Promise<void> {
+  if (bookmarked) {
+    const { error } = await supabase
+      .from('bookmarks')
+      .delete()
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+    throwIfError(error)
+    return
+  }
+
+  const { error } = await supabase
+    .from('bookmarks')
+    .insert({ post_id: postId, user_id: userId })
+
+  if (error && error.code !== '23505') throw new Error(error.message)
+}
+
+export async function getBookmarkedPosts(
+  userId: string,
+  limit = 30,
+): Promise<PostWithAuthor[]> {
+  if (!userId) return []
+
+  const { data: rows, error } = await supabase
+    .from('bookmarks')
+    .select('post_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  throwIfError(error)
+
+  const ids = ((rows ?? []) as { post_id: string }[]).map((row) => row.post_id)
+  if (ids.length === 0) return []
+
+  const { data, error: postsError } = await supabase
+    .from('posts')
+    .select('*, author:profiles!posts_author_id_fkey(*)')
+    .in('id', ids)
+
+  throwIfError(postsError)
+
+  const order = new Map(ids.map((id, index) => [id, index]))
+  const posts = (data ?? []) as unknown as PostWithAuthor[]
+  return posts.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+}
+
+export async function isUsernameAvailable(username: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('username', normalizeUsername(username))
+
+  throwIfError(error)
+  return (count ?? 0) === 0
+}

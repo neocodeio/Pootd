@@ -1,0 +1,155 @@
+import { Suspense } from 'react'
+import { Compass, Home, PenLine, UserRound } from 'lucide-react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Brand } from '@/components/brand'
+import { MobileNav } from '@/components/layout/mobile-nav'
+import { UserMenu } from '@/components/layout/user-menu'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/hooks/use-auth'
+import { cn } from '@/lib/utils'
+import type { ReactNode } from 'react'
+
+const currentYear = new Date().getFullYear()
+
+function HeaderLink({
+  to,
+  icon,
+  children,
+  end = false,
+}: {
+  to: string
+  icon: ReactNode
+  children: ReactNode
+  end?: boolean
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        cn(
+          'inline-flex items-center gap-1.5 text-sm font-medium transition-colors',
+          isActive
+            ? 'text-foreground'
+            : 'text-muted-foreground hover:text-foreground',
+        )
+      }
+    >
+      {icon}
+      <span>{children}</span>
+    </NavLink>
+  )
+}
+
+function DesktopHeader() {
+  const { user, profile, loading } = useAuth()
+
+  return (
+    <header className="sticky top-0 z-30 hidden border-b border-border/80 bg-background/80 backdrop-blur-xl sm:block">
+      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-6">
+        <div className="flex items-center gap-7">
+          <Brand />
+          <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي">
+            <HeaderLink to="/" end icon={<Home className="size-4" />}>
+              الرئيسية
+            </HeaderLink>
+            <HeaderLink to="/explore" icon={<Compass className="size-4" />}>
+              استكشف
+            </HeaderLink>
+            {user && profile ? (
+              <HeaderLink
+                to={`/u/${profile.username}`}
+                icon={<UserRound className="size-4" />}
+              >
+                ملفي
+              </HeaderLink>
+            ) : null}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          {loading ? (
+            <>
+              <Skeleton className="h-9 w-32 rounded-lg" />
+              <Skeleton className="size-9 rounded-full" />
+            </>
+          ) : user ? (
+            <>
+              <Button asChild size="sm">
+                <Link to="/#compose">
+                  <PenLine />
+                  أنشئ منشور
+                </Link>
+              </Button>
+              <UserMenu compact />
+            </>
+          ) : (
+            <>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/login">تسجيل الدخول</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link to="/signup">إنشاء حساب</Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function MobileHeader() {
+  const { user, loading } = useAuth()
+
+  return (
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/80 px-4 backdrop-blur-xl sm:hidden">
+      <Brand variant="compact" />
+      <div className="flex items-center gap-1.5">
+        <ThemeToggle />
+        {loading ? (
+          <Skeleton className="size-9 rounded-full" />
+        ) : user ? (
+          <UserMenu compact />
+        ) : (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/login">دخول</Link>
+          </Button>
+        )}
+      </div>
+    </header>
+  )
+}
+
+function PageFallback() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-40 rounded-lg" />
+      <Skeleton className="h-36 w-full rounded-xl" />
+      <Skeleton className="h-40 w-full rounded-xl" />
+      <Skeleton className="h-40 w-full rounded-xl" />
+    </div>
+  )
+}
+
+export function AppShell() {
+  return (
+    <div className="flex min-h-svh flex-col bg-background">
+      <DesktopHeader />
+      <MobileHeader />
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 pt-4 sm:px-6 sm:pb-12 sm:pt-8">
+        <Suspense fallback={<PageFallback />}>
+          <Outlet />
+        </Suspense>
+      </main>
+      <footer className="mx-auto hidden w-full max-w-2xl items-center justify-between border-t border-border px-6 py-6 text-xs text-muted-foreground sm:flex">
+        <span>© {currentYear} بوتد</span>
+        <span>مساحة عربية للأمن السيبراني</span>
+      </footer>
+      <MobileNav />
+    </div>
+  )
+}
