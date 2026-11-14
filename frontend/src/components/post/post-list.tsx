@@ -2,19 +2,23 @@ import type { ReactNode } from 'react'
 import { EmptyState } from '@/components/empty-state'
 import { PostCard } from '@/components/post/post-card'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { PostWithAuthor } from '@/lib/types'
 
 function PostSkeleton() {
   return (
-    <div className="flex gap-3 px-4 py-4 sm:px-5">
-      <Skeleton className="size-9 shrink-0 rounded-full" />
-      <div className="flex-1 space-y-2">
-        <Skeleton className="h-3 w-40" />
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-2/3" />
+    <Card className="p-4 sm:p-5">
+      <div className="flex gap-3">
+        <Skeleton className="size-10 shrink-0 rounded-full" />
+        <div className="flex-1 space-y-2.5">
+          <Skeleton className="h-3 w-48" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+          <Skeleton className="h-6 w-32 rounded-full" />
+        </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -23,6 +27,7 @@ export function PostList({
   isLoading,
   error,
   likedIds,
+  bookmarkedIds,
   emptyTitle,
   emptyDescription,
   emptyAction,
@@ -32,6 +37,7 @@ export function PostList({
   isLoading: boolean
   error: Error | null
   likedIds: string[] | undefined
+  bookmarkedIds?: string[] | undefined
   emptyTitle: string
   emptyDescription?: string
   emptyAction?: ReactNode
@@ -39,12 +45,10 @@ export function PostList({
 }) {
   if (isLoading) {
     return (
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="divide-y divide-border">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <PostSkeleton key={index} />
-          ))}
-        </div>
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <PostSkeleton key={index} />
+        ))}
       </div>
     )
   }
@@ -76,14 +80,18 @@ export function PostList({
   }
 
   const liked = new Set(likedIds ?? [])
+  const bookmarked = new Set(bookmarkedIds ?? [])
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="divide-y divide-border">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} liked={liked.has(post.id)} />
-        ))}
-      </div>
+    <div className="space-y-3">
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          liked={liked.has(post.id)}
+          bookmarked={bookmarked.has(post.id)}
+        />
+      ))}
     </div>
   )
 }

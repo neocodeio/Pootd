@@ -35,6 +35,9 @@ const SignupPage = lazy(() =>
 const VerifyPage = lazy(() =>
   import('@/pages/verify').then((module) => ({ default: module.VerifyPage })),
 )
+const SearchPage = lazy(() =>
+  import('@/pages/search').then((module) => ({ default: module.SearchPage })),
+)
 const NotFoundPage = lazy(() =>
   import('@/pages/not-found').then((module) => ({ default: module.NotFoundPage })),
 )
@@ -82,6 +85,7 @@ export default function App() {
             <Route element={<AppShell />}>
               <Route index element={<FeedPage />} />
               <Route path="explore" element={<ExplorePage />} />
+              <Route path="search" element={<SearchPage />} />
               <Route path="tags/:tag" element={<TagPage />} />
               <Route path="p/:id" element={<PostPage />} />
               <Route path="u/:username" element={<ProfilePage />} />

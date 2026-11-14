@@ -30,9 +30,9 @@ function HeaderLink({
       end={end}
       className={({ isActive }) =>
         cn(
-          'inline-flex items-center gap-1.5 text-sm font-medium transition-colors',
+          'inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-colors',
           isActive
-            ? 'text-foreground'
+            ? 'bg-secondary text-foreground'
             : 'text-muted-foreground hover:text-foreground',
         )
       }
@@ -51,7 +51,7 @@ function DesktopHeader() {
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-7">
           <Brand />
-          <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي">
+          <nav className="flex items-center gap-5" aria-label="التنقل الرئيسي"> {/**DON'T CHANGE IT */}
             <HeaderLink to="/" end icon={<Home className="size-4" />}>
               الرئيسية
             </HeaderLink>
@@ -78,7 +78,7 @@ function DesktopHeader() {
             </>
           ) : user ? (
             <>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="h-10 rounded-full px-4">
                 <Link to="/#compose">
                   <PenLine />
                   أنشئ منشور

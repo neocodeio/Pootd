@@ -41,11 +41,10 @@ export function LikeButton({
       aria-pressed={liked}
       aria-label={liked ? 'إلغاء الإعجاب بالمنشور' : 'الإعجاب بالمنشور'}
       className={cn(
-        'h-8 gap-1.5 rounded-md px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground',
-        liked && 'text-like hover:text-like',
+        'h-8 gap-1.5 rounded-full px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground',
       )}
     >
-      <Heart className={cn('size-4', liked && 'fill-current')} />
+      <Heart className={cn('size-4', liked && 'fill-current text-foreground')} />
       <span className="tabular-nums">{formatCount(likeCount)}</span>
     </Button>
   )

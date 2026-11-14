@@ -100,10 +100,10 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
           event.preventDefault()
           submit()
         }}
-        className="scroll-mt-24 p-3 sm:p-4"
+        className="scroll-mt-24 p-4 sm:p-5"
       >
         <div className="flex gap-3">
-          <UserAvatar profile={profile} className="mt-0.5 size-9" />
+          <UserAvatar profile={profile} className="mt-0.5 size-10" />
           <div className="min-w-0 flex-1">
             <Label htmlFor="composer-content" className="sr-only">
               محتوى المنشور
@@ -123,7 +123,7 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
               maxLength={MAX_LENGTH}
               rows={2}
               dir="auto"
-              className="min-h-20 resize-none border-0 bg-transparent p-0 px-1 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
+              className="min-h-28 resize-none border-0 bg-transparent p-0 px-1 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
             />
 
             <TagInput
@@ -134,10 +134,15 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
             />
 
             <div className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-2.5">
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {content.length}/{MAX_LENGTH}
-              </span>
-              <Button type="submit" size="sm" disabled={!canSubmit}>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span dir="ltr" className="whitespace-nowrap">
+                  Ctrl + Enter للنشر
+                </span>
+                <span className="tabular-nums">
+                  {content.length}/{MAX_LENGTH}
+                </span>
+              </div>
+              <Button type="submit" size="sm" className="rounded-full" disabled={!canSubmit}>
                 {createPost.isPending ? <Loader2 className="animate-spin" /> : <Send />}
                 نشر
               </Button>

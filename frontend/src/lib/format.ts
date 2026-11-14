@@ -65,16 +65,6 @@ export function formatJoined(iso: string): string {
   }).format(new Date(iso))
 }
 
-export function formatDateTime(iso: string): string {
-  return new Intl.DateTimeFormat(arabicLocale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(iso))
-}
-
 function compact(value: number, divisor: number): string {
   const scaled = value / divisor
   return scaled.toFixed(scaled < 10 ? 1 : 0).replace(/\.0$/, '')

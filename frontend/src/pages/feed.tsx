@@ -20,26 +20,17 @@ export function FeedPage() {
     <div className="space-y-4">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-xl font-semibold tracking-tight">الرئيسية</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight">الرئيسية</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {sort === 'new' ? 'آخر ما ينشره المجتمع.' : 'المنشورات الأكثر إعجابًا.'}
           </p>
         </div>
         <Tabs value={sort} onValueChange={(value) => setSort(value as SortOption)}>
-          <TabsList
-            variant="line"
-            className="h-auto w-auto justify-start gap-5 border-b border-border"
-          >
-            <TabsTrigger
-              value="new"
-              className="h-auto flex-none rounded-none px-0 pb-2.5 pt-1 text-sm after:bottom-[-1px]"
-            >
+          <TabsList>
+            <TabsTrigger value="new" className="px-3">
               الأحدث
             </TabsTrigger>
-            <TabsTrigger
-              value="top"
-              className="h-auto flex-none rounded-none px-0 pb-2.5 pt-1 text-sm after:bottom-[-1px]"
-            >
+            <TabsTrigger value="top" className="px-3">
               الأعلى
             </TabsTrigger>
           </TabsList>

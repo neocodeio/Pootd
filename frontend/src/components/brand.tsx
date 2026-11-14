@@ -22,7 +22,7 @@ export function Brand({
           alt="بوتد"
           width={240}
           height={56}
-          className="h-6 w-auto dark:invert"
+          className="h-9 w-auto transition-transform duration-200 group-hover:scale-[1.03] dark:invert"
         />
         {variant === 'full' ? (
           <span className="mt-1 text-[11px] font-medium text-muted-foreground">
