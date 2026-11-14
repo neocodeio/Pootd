@@ -51,7 +51,7 @@ function DesktopHeader() {
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-7">
           <Brand />
-          <nav className="flex items-center gap-5" aria-label="التنقل الرئيسي"> {/**DON'T CHANGE IT */}
+          <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي"> {/**DON'T CHANGE IT */}
             <HeaderLink to="/" end icon={<Home className="size-4" />}>
               الرئيسية
             </HeaderLink>
@@ -78,7 +78,7 @@ function DesktopHeader() {
             </>
           ) : user ? (
             <>
-              <Button asChild size="sm" className="h-10 rounded-full px-4">
+              <Button asChild size="sm" className="h-10 rounded-full px-5">
                 <Link to="/#compose">
                   <PenLine />
                   أنشئ منشور

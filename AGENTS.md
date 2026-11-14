@@ -14,19 +14,58 @@ If a request sounds like "make it look nicer / redesign / modernise", treat it
 as *"match the reference spec below exactly"* and ask before changing
 structure.
 
-## Reference layout (approved)
+## Golden reference
 
-Measured from the owner's screenshot at a 1920px viewport:
+`docs/reference/feed-1920-dark.png` is the owner's approved target: the
+logged-in feed at a 1920px viewport in dark mode (1919×941 capture). Every
+radius, height and gap below was measured from that file. When something looks
+off, compare against the image — not against taste. Do not re-crop, re-tint or
+"improve" it.
+
+Measured geometry at 1920px (dark):
+
+| Element | Measurement |
+| --- | --- |
+| Header row | border at `y 62`, content `h-16` |
+| Nav active pill | `94×36`, fully rounded, `px-3.5 py-2`, `bg-secondary` |
+| Create button | `120×40`, fully rounded, `px-5`, `bg-primary` |
+| Brand wordmark | `120×28` visible (`h-7`), tagline `91px` wide under it |
+| Page title | 24px / 700 weight |
+| Tabs track | `139×32`, fully rounded; active pill `70×25`, fully rounded |
+| Composer card | `624×234`, radius 18px (`rounded-2xl`) |
+| Composer textarea | `96px` tall (one line), divider 169px from card top |
+| Publish pill | `69×30`, fully rounded |
+| Post card | `624×195` (one-line post, two tags), radius 18px |
+| Tag pill | `26px` tall, fully rounded |
+| Action row buttons | `32px` tall, fully rounded |
+
+## Owner overrides (apply on top of the reference)
+
+These are deliberate deviations from `docs/reference/feed-1920-dark.png`. Do
+not "fix" them back without asking:
+
+- The feed page title is **not rendered**: keep `<h1 className="sr-only">
+  الرئيسية</h1>` for screen readers only. The subtitle stays visible and the
+  segmented tabs sit on its line.
+- The composer keyboard hint ("Ctrl + Enter للنشر") is **not rendered**; the
+  footer shows only the `0/4000` counter (submitting with Ctrl/⌘+Enter still
+  works).
+- The liked heart is **red** (`--like`), not white as in the reference image.
+
+## Reference layout (approved)
 
 | Element | Spec |
 | --- | --- |
 | Page background | `bg-background` — flat, no gradients, no shadows on the page |
 | Header | `h-16`, `max-w-5xl`, `px-6`, `border-b border-border/80`, `bg-background/80 backdrop-blur-xl` |
-| Header left group | theme toggle → "أنشئ منشور" button → user avatar |
-| Header right group | brand lockup → nav (الرئيسية / استكشف / ملفي) |
-| Brand lockup | thin pixel wordmark `h-9` (≈155px wide) + tagline `مجتمع الأمن السيبراني` at `text-[11px]`, right-aligned under it |
-| Feed column | `max-w-2xl` centred, `px-4 sm:px-6` |
-| Page header | title + subtitle on the start (right) edge, segmented tabs on the end (left) edge |
+| Header start group (left) | theme toggle → "أنشئ منشور" pill → user avatar (`size-11`) |
+| Header end group (right) | brand lockup → nav (الرئيسية / استكشف / ملفي) |
+| Header nav | `gap-1`; items `h-9 rounded-full px-3.5 py-2 gap-2 text-sm font-medium`, icon `size-4`; active item `bg-secondary` |
+| Brand lockup | wordmark `h-7` (`120×28`) + tagline `مجتمع الأمن السيبراني` at `text-[11px]` with `mt-1`, aligned to the end edge |
+| Create button | `h-10 rounded-full px-5`, primary fill, `PenLine` icon + "أنشئ منشور" |
+| Feed column | `max-w-2xl` centred, `px-4 sm:px-6`, vertical rhythm `space-y-4` |
+| Page header | subtitle `text-sm` on the start (right) edge (title is screen-reader only — see overrides); segmented tabs on the end (left) edge |
+| Segmented tabs | track `h-8 rounded-full p-[3px] bg-secondary/60`; trigger `rounded-full px-3.5 text-sm`, active `bg-secondary shadow-sm` |
 | Cards | `rounded-2xl border border-border bg-card`, `p-4 sm:p-5` |
 | Footer | hidden below `sm`, single row, `text-xs text-muted-foreground` |
 
@@ -50,22 +89,40 @@ Rules that must hold:
   `text-foreground/95`, `whitespace-pre-wrap break-words`, `dir="auto"`.
   **Text must stay selectable** — never wrap the body in a stretched link.
 - Clamp long posts at `line-clamp-10` and show the "اقرأ المنشور كاملًا" link.
-- Tags are plain `Badge variant="secondary"` pills, `#tag`, `dir="ltr"`.
+- Tags are plain `Badge variant="secondary"` pills (`rounded-full`, 26px tall),
+  `#tag`, `dir="ltr"`, 12px text.
 - Action row: `mt-3 flex items-center gap-0.5`, **no divider**, ghost buttons
-  sized `sm`, `rounded-full px-2.5 text-xs`. Order (start → end):
+  sized `sm`, `h-8 rounded-full px-2.5 text-xs`. Order (start → end):
   like → comments → bookmark → copy-link.
-- The like heart fills red when liked (`--like` token), never another colour.
+- The like heart turns **red** when liked: `fill-like text-like` on the icon
+  only (`--like` token). The count stays `text-muted-foreground`. Never use a
+  colour other than `--like` for the heart.
 - The `⋯` menu is muted and only appears at the end of the header row.
 - Edited posts show `· معدّل` next to the timestamp.
 
 ## Composer (approved)
 
 - Avatar `size-10` at the start (right) edge, textarea next to it,
-  `min-h-24`, borderless/transparent, `text-[15px] leading-8`, `px-1`
+  `min-h-24`, borderless/transparent, `text-[15px] leading-7`, `px-1`
   (0 padding clips Arabic glyphs in RTL — keep the 4px).
-- Tag row sits under the text column, `#` on the start edge.
-- Footer row: counter + "Ctrl + Enter للنشر" on the start edge, the "نشر" button
-  on the end (left) edge.
+- Tag row sits under the text column, `mt-3`, 28px tall, `#` on the end edge
+  with the "أضف وسومًا" placeholder on the start edge.
+- Footer row: `mt-3 border-t border-border pt-3`; the counter `0/4000` on the
+  start edge (the keyboard hint stays hidden — see overrides); the
+  `rounded-full px-4` "نشر" pill with the `Send` icon on the end (left) edge.
+- Submit with `Ctrl/⌘ + Enter` as well as the button; the button is disabled
+  while the textarea is empty or a post is in flight.
+
+## Typography
+
+- `--font-sans` and `--font-heading` are IBM Plex Sans Arabic. The font is
+  self-hosted: `src/main.tsx` imports the `@fontsource/ibm-plex-sans` (latin) and
+  `@fontsource/ibm-plex-sans-arabic` (arabic) 400/500/600/700 stylesheets.
+  **Keep those imports**: without them the browser falls back to Segoe UI and
+  every Arabic glyph, width and height shifts away from the reference.
+  Do not add a Google Fonts `<link>` — it would double-load the family.
+- Headings use `font-heading`; the feed title is `text-2xl font-bold
+  tracking-tight`.
 
 ## Colour tokens
 
@@ -76,6 +133,14 @@ Never hard-code colours. Use the semantic tokens in `src/index.css`:
 The `.dark` block mirrors the `:root` block. If you add a token, add it to
 both. `--like` is the only accent: `oklch(0.58 0.22 25)` light,
 `oklch(0.70 0.19 25)` dark.
+
+## Radii
+
+- Cards: `rounded-2xl` (18px) — composer, post cards, dialogs.
+- Interactive pills: `rounded-full` — nav items, tabs track and trigger, tag
+  badges, like/bookmark/copy buttons, publish button, create button.
+- Nothing has a chat bubble radius; do not mix `rounded-md`/`rounded-lg` into
+  pill-shaped controls.
 
 ## RTL rules
 
@@ -89,7 +154,7 @@ both. `--like` is the only accent: `oklch(0.58 0.22 25)` light,
 ## Logo
 
 - Header wordmark: `public/pootd-wordmark.png` (thin pixel wordmark, rebuilt
-  from `pootd_white-removebg.png`), displayed at `h-9`, `dark:invert`.
+  from `pootd_white-removebg.png`), displayed at `h-7`, `w-auto`, `dark:invert`.
 - App icon: `public/pootd_icon_black.png` / `pootd_icon_white.png` (the owner
   supplied these); favicons are the optimised `icon-light.png` /
   `icon-dark.png` with `prefers-color-scheme` media queries.
@@ -100,7 +165,8 @@ both. `--like` is the only accent: `oklch(0.58 0.22 25)` light,
   saying a change is done. For `backend/`, `node --check` each file in `src/`.
 - Verify visually in a real browser (headless Chrome over CDP) before claiming
   a UI change works — screenshots at 1920×919 (desktop) and 390×844 (mobile),
-  in both light and dark mode.
+  in both light and dark mode. Compare the desktop dark shot with
+  `docs/reference/feed-1920-dark.png`.
 - Arabic text must be checked as rendered. Reading Arabic through a PowerShell
   terminal shows `????` — that is the console, not the file.
 - Database changes go in a new numbered migration under

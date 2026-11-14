@@ -83,40 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const activeProfile = profile?.id === userId ? profile : null
 
-  // TEMP-DEMO: preview the signed-in layout without credentials (removed after screenshots)
-  if (
-    import.meta.env.DEV &&
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).has('demo')
-  ) {
-    const demoProfile: Profile = {
-      id: '8fbcb9c7-3c28-4166-8283-8e2a7f6b6785',
-      username: 'amin',
-      display_name: 'أمين',
-      bio: '',
-      avatar_url:
-        'https://reoauwvpuhxbtdipadhw.supabase.co/storage/v1/object/public/avatars/8fbcb9c7-3c28-4166-8283-8e2a7f6b6785/avatar?v=1794519963161',
-      cover_image_url: '',
-      website: '',
-      github: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-    return (
-      <AuthContext.Provider
-        value={{
-          session: null,
-          user: { id: demoProfile.id } as unknown as User,
-          profile: demoProfile,
-          loading: false,
-          refreshProfile: async () => {},
-        }}
-      >
-        {children}
-      </AuthContext.Provider>
-    )
-  }
-
   const value = useMemo<AuthContextValue>(
     () => ({
       session,

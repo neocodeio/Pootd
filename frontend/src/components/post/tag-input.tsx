@@ -37,7 +37,7 @@ export function TagInput({
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+    <div className="mt-3 flex flex-wrap items-center gap-1.5">
       {tags.map((tag) => (
         <span
           key={tag}
