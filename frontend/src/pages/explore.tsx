@@ -1,11 +1,13 @@
 import { PostList } from '@/components/post/post-list'
 import { TrendingTags } from '@/components/trending-tags'
 import { useBookmarkedPostIds, useFeed, useLikedPostIds } from '@/hooks/use-pootd'
+import { flattenPages } from '@/lib/pagination'
 
 export function ExplorePage() {
   const feed = useFeed(undefined, 'top')
-  const likedIds = useLikedPostIds(feed.data?.map((post) => post.id) ?? [])
-  const bookmarkedIds = useBookmarkedPostIds(feed.data?.map((post) => post.id) ?? [])
+  const posts = flattenPages(feed.data)
+  const likedIds = useLikedPostIds(posts?.map((post) => post.id) ?? [])
+  const bookmarkedIds = useBookmarkedPostIds(posts?.map((post) => post.id) ?? [])
 
   return (
     <div className="space-y-6">
@@ -27,12 +29,15 @@ export function ExplorePage() {
       <section>
         <h2 className="mb-3 text-sm font-semibold">الأكثر إعجابًا</h2>
         <PostList
-          posts={feed.data}
+          posts={posts}
           isLoading={feed.isLoading}
           error={feed.error}
           likedIds={likedIds.data}
           bookmarkedIds={bookmarkedIds.data}
           onRetry={() => void feed.refetch()}
+          hasMore={feed.hasNextPage}
+          isLoadingMore={feed.isFetchingNextPage}
+          onLoadMore={() => void feed.fetchNextPage()}
           emptyTitle="ما فيه منشورات بعد"
           emptyDescription="تظهر المنشورات الأعلى هنا بعد ما يبدأ المجتمع بالتفاعل."
         />

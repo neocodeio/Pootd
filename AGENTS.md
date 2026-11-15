@@ -32,11 +32,10 @@ Measured geometry at 1920px (dark):
 | Brand wordmark | `120×28` visible (`h-7`), tagline `91px` wide under it |
 | Page title | 24px / 700 weight |
 | Tabs track | `139×32`, fully rounded; active pill `70×25`, fully rounded |
-| Composer card | `624×234`, radius 18px (`rounded-2xl`) |
+| Composer card | `624×234` in the reference (`195` now — the tag row is gone) |
 | Composer textarea | `96px` tall (one line), divider 169px from card top |
 | Publish pill | `69×30`, fully rounded |
-| Post card | `624×195` (one-line post, two tags), radius 18px |
-| Tag pill | `26px` tall, fully rounded |
+| Post card | `624×195` (one-line post), radius 18px |
 | Action row buttons | `32px` tall, fully rounded |
 
 ## Owner overrides (apply on top of the reference)
@@ -51,6 +50,17 @@ not "fix" them back without asking:
   footer shows only the `0/4000` counter (submitting with Ctrl/⌘+Enter still
   works).
 - The liked heart is **red** (`--like`), not white as in the reference image.
+- **Hashtags are inline, not a separate tag row.** The composer has no tag
+  input and posts have no tag pills under the text. The author types `#tag`
+  inside the post, it stays exactly where they typed it, and it renders in
+  `--tag` blue: Latin hashtags link to `/tags/:tag`, Arabic or otherwise
+  unstorable hashtags are highlighted but not linked. The `tags` column in the
+  database is still populated by parsing the content (`extractTags` in
+  `lib/validation.ts`) so trending tags, tag pages and search keep working.
+- **The header carries a notifications bell** next to the theme toggle (desktop
+  and mobile). It is the only approved addition to the reference header; it may
+  shift the create button a few pixels. The unread badge is monochrome
+  (`bg-foreground text-background`), never `--like` red.
 
 ## Reference layout (approved)
 
@@ -75,9 +85,8 @@ not "fix" them back without asking:
 ┌──────────────────────────────────────────────┐
 │ [avatar 40px]  Name  @user · قبل 12 دقيقة   ⋯  │   ← ⋯ on the end (left) edge
 │                                              │
-│              Post content, 15px/leading-8     │
-│                                              │
-│              #tag #tag                       │
+│        Post content, 15px/leading-8           │
+│        with #hashtags in place, blue          │
 │                                              │
 │   ♡ 1   💬 1   🔗                             │   ← no divider above this row
 └──────────────────────────────────────────────┘
@@ -89,8 +98,9 @@ Rules that must hold:
   `text-foreground/95`, `whitespace-pre-wrap break-words`, `dir="auto"`.
   **Text must stay selectable** — never wrap the body in a stretched link.
 - Clamp long posts at `line-clamp-10` and show the "اقرأ المنشور كاملًا" link.
-- Tags are plain `Badge variant="secondary"` pills (`rounded-full`, 26px tall),
-  `#tag`, `dir="ltr"`, 12px text.
+- Hashtags render inline in the content (`PostContent` / `post-content.tsx`)
+  in `text-tag` blue, exactly where the author typed them — no pills and no
+  tag list after the text. Never re-add a stretched link around the body.
 - Action row: `mt-3 flex items-center gap-0.5`, **no divider**, ghost buttons
   sized `sm`, `h-8 rounded-full px-2.5 text-xs`. Order (start → end):
   like → comments → bookmark → copy-link.
@@ -105,13 +115,28 @@ Rules that must hold:
 - Avatar `size-10` at the start (right) edge, textarea next to it,
   `min-h-24`, borderless/transparent, `text-[15px] leading-7`, `px-1`
   (0 padding clips Arabic glyphs in RTL — keep the 4px).
-- Tag row sits under the text column, `mt-3`, 28px tall, `#` on the end edge
-  with the "أضف وسومًا" placeholder on the start edge.
+- No tag input row. Hashtags are typed directly in the textarea as `#tag`;
+  on submit the tags are parsed from the content.
 - Footer row: `mt-3 border-t border-border pt-3`; the counter `0/4000` on the
   start edge (the keyboard hint stays hidden — see overrides); the
   `rounded-full px-4` "نشر" pill with the `Send` icon on the end (left) edge.
 - Submit with `Ctrl/⌘ + Enter` as well as the button; the button is disabled
   while the textarea is empty or a post is in flight.
+
+## OTP code input (approved)
+
+`components/auth/otp-input.tsx` — the email code is **one box per digit**, not
+a single field:
+
+- Four boxes, `h-14 w-11`, `rounded-xl`, `border bg-card`, `font-mono text-2xl`,
+  `gap-2.5`, centred in the form, `dir="ltr"` so the digits read 1→2→3→4.
+- Filled boxes get `border-foreground/30 bg-secondary`; the focused box uses
+  the normal input focus ring (`border-foreground/40 ring-3 ring-ring/30`).
+- Typing advances, backspace clears and walks back, arrow keys move, and a
+  pasted or autofilled code spreads across the boxes. The parent clears the
+  row by remounting it with a new `key`.
+- Keep `autoComplete="one-time-code"` on the first box, and the group labelled
+  "رمز التحقق" for screen readers.
 
 ## Typography
 
@@ -128,17 +153,19 @@ Rules that must hold:
 
 Never hard-code colours. Use the semantic tokens in `src/index.css`:
 `background`, `foreground`, `card`, `popover`, `primary`, `secondary`, `muted`,
-`accent`, `destructive`, `border`, `input`, `ring`, `like`.
+`accent`, `destructive`, `border`, `input`, `ring`, `like`, `tag`.
 
 The `.dark` block mirrors the `:root` block. If you add a token, add it to
-both. `--like` is the only accent: `oklch(0.58 0.22 25)` light,
-`oklch(0.70 0.19 25)` dark.
+both. `--like` is the heart accent: `oklch(0.58 0.22 25)` light,
+`oklch(0.70 0.19 25)` dark. `--tag` is the hashtag accent:
+`oklch(0.52 0.16 255)` light, `oklch(0.74 0.12 255)` dark. Those two are the
+only colours in the product.
 
 ## Radii
 
 - Cards: `rounded-2xl` (18px) — composer, post cards, dialogs.
-- Interactive pills: `rounded-full` — nav items, tabs track and trigger, tag
-  badges, like/bookmark/copy buttons, publish button, create button.
+- Interactive pills: `rounded-full` — nav items, tabs track and trigger,
+  like/bookmark/copy buttons, publish button, create button.
 - Nothing has a chat bubble radius; do not mix `rounded-md`/`rounded-lg` into
   pill-shaped controls.
 

@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card'
 
 const steps = [
   'أنشئ مشروع Supabase من supabase.com.',
-  'شغّل ملفات 0001_init.sql و0002_email_otp.sql و0003_profile_cover.sql و0004_bookmarks.sql في محرر SQL.',
+  'شغّل ملفات 0001_init.sql و0002_email_otp.sql و0003_profile_cover.sql و0004_bookmarks.sql و0005_notifications.sql و0006_reports.sql و0007_rate_limits.sql في محرر SQL.',
   'خلّ تأكيد البريد مفعّلًا حتى ما يقدر أحد يسجل دخول قبل التحقق.',
   'انسخ Project URL ومفتاح anon إلى frontend/.env.',
   'جهّز backend/.env بمفتاح service role وسر OTP ومزود البريد.',

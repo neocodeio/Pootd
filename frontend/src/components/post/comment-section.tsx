@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Flag, Loader2, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { ReportDialog } from '@/components/report-dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -13,6 +14,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useCreateComment, useDeleteComment } from '@/hooks/use-mutations'
 import { useComments } from '@/hooks/use-pootd'
 import { timeAgo } from '@/lib/format'
+import { flattenPages } from '@/lib/pagination'
 import type { CommentWithAuthor } from '@/lib/types'
 
 const MAX_COMMENT_LENGTH = 1000
@@ -20,17 +22,22 @@ const MAX_COMMENT_LENGTH = 1000
 export function CommentSection({
   postId,
   postAuthorId,
+  commentCount,
 }: {
   postId: string
   postAuthorId: string
+  commentCount?: number
 }) {
   const { user, profile } = useAuth()
-  const { data, isLoading, error } = useComments(postId)
+  const { data, isLoading, error, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useComments(postId)
   const createComment = useCreateComment(postId)
   const deleteComment = useDeleteComment(postId)
   const [content, setContent] = useState('')
   const [target, setTarget] = useState<CommentWithAuthor | null>(null)
+  const [reportTarget, setReportTarget] = useState<CommentWithAuthor | null>(null)
 
+  const comments = flattenPages(data)
   const canSubmit = content.trim().length > 0 && !createComment.isPending
 
   function submit() {
@@ -61,7 +68,7 @@ export function CommentSection({
         <h2 className="text-sm font-semibold">
           التعليقات{' '}
           <span className="text-xs font-normal text-muted-foreground">
-            ({data?.length ?? 0})
+            ({commentCount ?? comments?.length ?? 0})
           </span>
         </h2>
 
@@ -134,68 +141,99 @@ export function CommentSection({
         <p className="border-t border-border px-4 py-6 text-sm text-muted-foreground sm:px-5">
           تعذّر تحميل التعليقات: {error.message}
         </p>
-      ) : !data || data.length === 0 ? (
+      ) : !comments || comments.length === 0 ? (
         <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-5">
           ما فيه تعليقات بعد. ابدأ النقاش.
         </p>
       ) : (
-        <div className="divide-y divide-border border-t border-border">
-          {data.map((comment) => {
-            const canDelete =
-              user?.id === comment.author_id || user?.id === postAuthorId
+        <>
+          <div className="divide-y divide-border border-t border-border">
+            {comments.map((comment) => {
+              const canDelete =
+                user?.id === comment.author_id || user?.id === postAuthorId
+              const canReport = Boolean(user && user.id !== comment.author_id)
 
-            return (
-              <article key={comment.id} className="group flex gap-3 px-4 py-4 sm:px-5">
-                <Link
-                  to={`/u/${comment.author.username}`}
-                  aria-label={`عرض ملف ${comment.author.display_name}`}
-                  className="shrink-0"
-                >
-                  <UserAvatar profile={comment.author} className="size-8" />
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <Link
-                      to={`/u/${comment.author.username}`}
-                      dir="auto"
-                      className="text-sm font-medium hover:underline"
-                    >
-                      {comment.author.display_name}
-                    </Link>
-                    <span dir="ltr" className="text-xs text-muted-foreground">
-                      @{comment.author.username}
-                    </span>
-                    <span className="text-xs text-muted-foreground/60" aria-hidden="true">
-                      ·
-                    </span>
-                    <span
-                      className="text-xs text-muted-foreground"
-                      title={new Date(comment.created_at).toLocaleString('ar-SA-u-nu-latn')}
-                    >
-                      {timeAgo(comment.created_at)}
-                    </span>
-                    {canDelete ? (
-                      <button
-                        type="button"
-                        onClick={() => setTarget(comment)}
-                        aria-label="حذف التعليق"
-                        className="ms-auto text-muted-foreground/60 opacity-100 transition-colors hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    ) : null}
-                  </div>
-                  <p
-                    dir="auto"
-                    className="mt-1 whitespace-pre-wrap break-words text-sm leading-7 text-foreground/90"
+              return (
+                <article key={comment.id} className="group flex gap-3 px-4 py-4 sm:px-5">
+                  <Link
+                    to={`/u/${comment.author.username}`}
+                    aria-label={`عرض ملف ${comment.author.display_name}`}
+                    className="shrink-0"
                   >
-                    {comment.content}
-                  </p>
-                </div>
-              </article>
-            )
-          })}
-        </div>
+                    <UserAvatar profile={comment.author} className="size-8" />
+                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <Link
+                        to={`/u/${comment.author.username}`}
+                        dir="auto"
+                        className="text-sm font-medium hover:underline"
+                      >
+                        {comment.author.display_name}
+                      </Link>
+                      <span dir="ltr" className="text-xs text-muted-foreground">
+                        @{comment.author.username}
+                      </span>
+                      <span className="text-xs text-muted-foreground/60" aria-hidden="true">
+                        ·
+                      </span>
+                      <span
+                        className="text-xs text-muted-foreground"
+                        title={new Date(comment.created_at).toLocaleString('ar-SA-u-nu-latn')}
+                      >
+                        {timeAgo(comment.created_at)}
+                      </span>
+                      <span className="ms-auto flex items-center gap-1">
+                        {canReport ? (
+                          <button
+                            type="button"
+                            onClick={() => setReportTarget(comment)}
+                            aria-label="الإبلاغ عن التعليق"
+                            className="text-muted-foreground/60 opacity-100 transition-colors hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
+                          >
+                            <Flag className="size-3.5" />
+                          </button>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            onClick={() => setTarget(comment)}
+                            aria-label="حذف التعليق"
+                            className="text-muted-foreground/60 opacity-100 transition-colors hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        ) : null}
+                      </span>
+                    </div>
+                    <p
+                      dir="auto"
+                      className="mt-1 whitespace-pre-wrap break-words text-sm leading-7 text-foreground/90"
+                    >
+                      {comment.content}
+                    </p>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+
+          {hasNextPage ? (
+            <div className="border-t border-border p-3 text-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => void fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {isFetchingNextPage ? <Loader2 className="animate-spin" /> : null}
+                حمّل المزيد من التعليقات
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
 
       <ConfirmDialog
@@ -208,6 +246,14 @@ export function CommentSection({
         confirmLabel="حذف"
         pending={deleteComment.isPending}
         onConfirm={handleDelete}
+      />
+
+      <ReportDialog
+        open={Boolean(reportTarget)}
+        onOpenChange={(open) => {
+          if (!open) setReportTarget(null)
+        }}
+        commentId={reportTarget?.id}
       />
     </Card>
   )

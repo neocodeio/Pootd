@@ -109,7 +109,15 @@ export function LoginPage() {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="password">كلمة المرور</Label>
+          <div className="flex items-baseline justify-between gap-2">
+            <Label htmlFor="password">كلمة المرور</Label>
+            <Link
+              to="/reset"
+              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              نسيت كلمة المرور؟
+            </Link>
+          </div>
           <div className="relative">
             <Input
               id="password"

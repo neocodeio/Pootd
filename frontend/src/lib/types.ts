@@ -1,5 +1,41 @@
 export type SortOption = 'new' | 'top'
 
+/**
+ * Keyset cursor. `like_count` is only present for the "top" ordering and `id`
+ * is the tie-breaker so pages never overlap or skip rows.
+ */
+export interface Cursor {
+  created_at: string
+  id: string
+  like_count?: number
+}
+
+export interface Page<T> {
+  items: T[]
+  nextCursor: Cursor | null
+}
+
+export interface ReportInput {
+  postId?: string
+  commentId?: string
+  reason: ReportReason
+  details?: string
+}
+
+export type ReportReason = 'spam' | 'harassment' | 'malicious_link' | 'other'
+
+export type NotificationType = 'like' | 'comment'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  post_id: string | null
+  comment_id: string | null
+  read_at: string | null
+  created_at: string
+  actor: Profile
+}
+
 export interface Profile {
   id: string
   username: string

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/hooks/use-auth'
 import { useFeed, useBookmarkedPostIds, useLikedPostIds } from '@/hooks/use-pootd'
+import { flattenPages } from '@/lib/pagination'
 import type { SortOption } from '@/lib/types'
 
 export function FeedPage() {
@@ -13,8 +14,9 @@ export function FeedPage() {
   const location = useLocation()
   const [sort, setSort] = useState<SortOption>('new')
   const feed = useFeed(undefined, sort)
-  const likedIds = useLikedPostIds(feed.data?.map((post) => post.id) ?? [])
-  const bookmarkedIds = useBookmarkedPostIds(feed.data?.map((post) => post.id) ?? [])
+  const posts = flattenPages(feed.data)
+  const likedIds = useLikedPostIds(posts?.map((post) => post.id) ?? [])
+  const bookmarkedIds = useBookmarkedPostIds(posts?.map((post) => post.id) ?? [])
 
   return (
     <div className="space-y-4">
@@ -40,12 +42,15 @@ export function FeedPage() {
       <Composer autoFocus={location.hash === '#compose'} />
 
       <PostList
-        posts={feed.data}
+        posts={posts}
         isLoading={feed.isLoading}
         error={feed.error}
         likedIds={likedIds.data}
         bookmarkedIds={bookmarkedIds.data}
         onRetry={() => void feed.refetch()}
+        hasMore={feed.hasNextPage}
+        isLoadingMore={feed.isFetchingNextPage}
+        onLoadMore={() => void feed.fetchNextPage()}
         emptyTitle={sort === 'top' ? 'ما فيه منشورات أعلى بعد' : 'ما فيه منشورات بعد'}
         emptyDescription={
           user

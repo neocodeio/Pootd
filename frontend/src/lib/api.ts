@@ -1,45 +1,102 @@
 import { supabase } from './supabase'
 import type {
   CommentWithAuthor,
+  Cursor,
+  Notification,
+  Page,
   PostWithAuthor,
   Profile,
   ProfileStats,
   ProfileUpdate,
+  ReportInput,
   SortOption,
   TrendingTag,
 } from './types'
 import { normalizeTag, normalizeUsername, sanitizeSearchTerm } from './validation'
 
+const PAGE_SIZE = 20
+const COMMENT_PAGE_SIZE = 30
+const NOTIFICATION_PAGE_SIZE = 20
+
 function throwIfError(error: { message: string } | null): void {
   if (error) throw new Error(error.message)
 }
 
-export async function getFeed(options: {
-  tag?: string
-  sort?: SortOption
-  limit?: number
-} = {}): Promise<PostWithAuthor[]> {
+/** PostgREST filters are happier with a timezone marker than with `+00:00`. */
+function toIso(value: string): string {
+  return new Date(value).toISOString()
+}
+
+function cursorOf(row: { created_at: string; id: string; like_count?: number }): Cursor {
+  return { created_at: row.created_at, id: row.id, like_count: row.like_count }
+}
+
+/**
+ * Fetches one extra row so the caller knows whether another page exists
+ * without a second round-trip.
+ */
+function toPage<T>(rows: T[], limit: number, cursor: (row: T) => Cursor): Page<T> {
+  const items = rows.slice(0, limit)
+  const last = items[items.length - 1]
+  return {
+    items,
+    nextCursor: rows.length > limit && last ? cursor(last) : null,
+  }
+}
+
+export async function getFeed(
+  options: {
+    tag?: string
+    sort?: SortOption
+    limit?: number
+    cursor?: Cursor | null
+  } = {},
+): Promise<Page<PostWithAuthor>> {
+  const limit = options.limit ?? PAGE_SIZE
+  const cursor = options.cursor ?? null
+
   let query = supabase
     .from('posts')
     .select('*, author:profiles!posts_author_id_fkey(*)')
-    .limit(options.limit ?? 30)
+    .limit(limit + 1)
 
   if (options.tag) {
     query = query.contains('tags', [normalizeTag(options.tag)])
   }
 
   if (options.sort === 'top') {
+    if (cursor) {
+      const likeCount = cursor.like_count ?? 0
+      const at = toIso(cursor.created_at)
+      query = query.or(
+        [
+          `like_count.lt.${likeCount}`,
+          `and(like_count.eq.${likeCount},created_at.lt.${at})`,
+          `and(like_count.eq.${likeCount},created_at.eq.${at},id.lt.${cursor.id})`,
+        ].join(','),
+      )
+    }
     query = query
       .order('like_count', { ascending: false })
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
   } else {
-    query = query.order('created_at', { ascending: false })
+    if (cursor) {
+      const at = toIso(cursor.created_at)
+      query = query.or(
+        `created_at.lt.${at},and(created_at.eq.${at},id.lt.${cursor.id})`,
+      )
+    }
+    query = query
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
   }
 
   const { data, error } = await query
   throwIfError(error)
-  return (data ?? []) as unknown as PostWithAuthor[]
+  return toPage((data ?? []) as unknown as PostWithAuthor[], limit, cursorOf)
 }
+
 
 export async function getPost(postId: string): Promise<PostWithAuthor | null> {
   const { data, error } = await supabase
@@ -52,30 +109,87 @@ export async function getPost(postId: string): Promise<PostWithAuthor | null> {
   return (data as unknown as PostWithAuthor | null) ?? null
 }
 
-export async function getUserPosts(userId: string, limit = 30): Promise<PostWithAuthor[]> {
-  const { data, error } = await supabase
+export async function getUserPosts(
+  userId: string,
+  options: { limit?: number; cursor?: Cursor | null } = {},
+): Promise<Page<PostWithAuthor>> {
+  const limit = options.limit ?? PAGE_SIZE
+  const cursor = options.cursor ?? null
+
+  let query = supabase
     .from('posts')
     .select('*, author:profiles!posts_author_id_fkey(*)')
     .eq('author_id', userId)
+    .limit(limit + 1)
+
+  if (cursor) {
+    const at = toIso(cursor.created_at)
+    query = query.or(`created_at.lt.${at},and(created_at.eq.${at},id.lt.${cursor.id})`)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .order('id', { ascending: false })
 
   throwIfError(error)
-  return (data ?? []) as unknown as PostWithAuthor[]
+  return toPage((data ?? []) as unknown as PostWithAuthor[], limit, cursorOf)
 }
 
-export async function getLikedPosts(userId: string, limit = 30): Promise<PostWithAuthor[]> {
-  const { data, error } = await supabase
+export async function getLikedPosts(
+  userId: string,
+  options: { limit?: number; cursor?: Cursor | null } = {},
+): Promise<Page<PostWithAuthor>> {
+  const limit = options.limit ?? PAGE_SIZE
+  const cursor = options.cursor ?? null
+
+  let query = supabase
     .from('likes')
-    .select('post:posts!likes_post_id_fkey(*, author:profiles!posts_author_id_fkey(*))')
+    .select(
+      'post_id, created_at, post:posts!likes_post_id_fkey(*, author:profiles!posts_author_id_fkey(*))',
+    )
     .eq('user_id', userId)
+    .limit(limit + 1)
+
+  if (cursor) {
+    const at = toIso(cursor.created_at)
+    query = query.or(`created_at.lt.${at},and(created_at.eq.${at},post_id.lt.${cursor.id})`)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .order('post_id', { ascending: false })
 
   throwIfError(error)
-  const rows = (data ?? []) as unknown as { post: PostWithAuthor | null }[]
-  return rows.map((row) => row.post).filter((post): post is PostWithAuthor => Boolean(post))
+
+  const rows = (data ?? []) as unknown as {
+    post_id: string
+    created_at: string
+    post: PostWithAuthor | null
+  }[]
+  const page = rows.slice(0, limit)
+  const last = page[page.length - 1]
+
+  return {
+    items: page
+      .map((row) => row.post)
+      .filter((post): post is PostWithAuthor => Boolean(post)),
+    nextCursor:
+      rows.length > limit && last
+        ? { created_at: last.created_at, id: last.post_id }
+        : null,
+  }
 }
+
+export async function getLikedPostsCount(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('likes')
+    .select('post_id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+
+  throwIfError(error)
+  return count ?? 0
+}
+
 
 export async function getLikedPostIds(
   postIds: string[],
@@ -197,17 +311,32 @@ export async function searchProfiles(query: string, limit = 12): Promise<Profile
   return (data ?? []) as Profile[]
 }
 
-export async function getComments(postId: string): Promise<CommentWithAuthor[]> {
-  const { data, error } = await supabase
+export async function getComments(
+  postId: string,
+  options: { limit?: number; cursor?: Cursor | null } = {},
+): Promise<Page<CommentWithAuthor>> {
+  const limit = options.limit ?? COMMENT_PAGE_SIZE
+  const cursor = options.cursor ?? null
+
+  let query = supabase
     .from('comments')
     .select('*, author:profiles!comments_author_id_fkey(*)')
     .eq('post_id', postId)
+    .limit(limit + 1)
+
+  if (cursor) {
+    const at = toIso(cursor.created_at)
+    query = query.or(`created_at.gt.${at},and(created_at.eq.${at},id.gt.${cursor.id})`)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: true })
-    .limit(100)
+    .order('id', { ascending: true })
 
   throwIfError(error)
-  return (data ?? []) as unknown as CommentWithAuthor[]
+  return toPage((data ?? []) as unknown as CommentWithAuthor[], limit, cursorOf)
 }
+
 
 export async function createComment(
   postId: string,
@@ -382,33 +511,144 @@ export async function toggleBookmark(
 
 export async function getBookmarkedPosts(
   userId: string,
-  limit = 30,
-): Promise<PostWithAuthor[]> {
-  if (!userId) return []
+  options: { limit?: number; cursor?: Cursor | null } = {},
+): Promise<Page<PostWithAuthor>> {
+  if (!userId) return { items: [], nextCursor: null }
 
-  const { data: rows, error } = await supabase
+  const limit = options.limit ?? PAGE_SIZE
+  const cursor = options.cursor ?? null
+
+  let query = supabase
     .from('bookmarks')
-    .select('post_id')
+    .select(
+      'post_id, created_at, post:posts!bookmarks_post_id_fkey(*, author:profiles!posts_author_id_fkey(*))',
+    )
     .eq('user_id', userId)
+    .limit(limit + 1)
+
+  if (cursor) {
+    const at = toIso(cursor.created_at)
+    query = query.or(`created_at.lt.${at},and(created_at.eq.${at},post_id.lt.${cursor.id})`)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .order('post_id', { ascending: false })
 
   throwIfError(error)
 
-  const ids = ((rows ?? []) as { post_id: string }[]).map((row) => row.post_id)
-  if (ids.length === 0) return []
+  const rows = (data ?? []) as unknown as {
+    post_id: string
+    created_at: string
+    post: PostWithAuthor | null
+  }[]
+  const page = rows.slice(0, limit)
+  const last = page[page.length - 1]
 
-  const { data, error: postsError } = await supabase
-    .from('posts')
-    .select('*, author:profiles!posts_author_id_fkey(*)')
-    .in('id', ids)
-
-  throwIfError(postsError)
-
-  const order = new Map(ids.map((id, index) => [id, index]))
-  const posts = (data ?? []) as unknown as PostWithAuthor[]
-  return posts.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+  return {
+    items: page
+      .map((row) => row.post)
+      .filter((post): post is PostWithAuthor => Boolean(post)),
+    nextCursor:
+      rows.length > limit && last
+        ? { created_at: last.created_at, id: last.post_id }
+        : null,
+  }
 }
+
+export async function getBookmarkedPostsCount(userId: string): Promise<number> {
+  if (!userId) return 0
+
+  const { count, error } = await supabase
+    .from('bookmarks')
+    .select('post_id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+
+  throwIfError(error)
+  return count ?? 0
+}
+
+export async function getNotifications(
+  userId: string,
+  options: { limit?: number; cursor?: Cursor | null } = {},
+): Promise<Page<Notification>> {
+  const limit = options.limit ?? NOTIFICATION_PAGE_SIZE
+  const cursor = options.cursor ?? null
+
+  let query = supabase
+    .from('notifications')
+    .select(
+      'id, type, post_id, comment_id, read_at, created_at, actor:profiles!notifications_actor_id_fkey(*)',
+    )
+    .eq('recipient_id', userId)
+    .limit(limit + 1)
+
+  if (cursor) {
+    const at = toIso(cursor.created_at)
+    query = query.or(`created_at.lt.${at},and(created_at.eq.${at},id.lt.${cursor.id})`)
+  }
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+
+  throwIfError(error)
+  return toPage((data ?? []) as unknown as Notification[], limit, cursorOf)
+}
+
+export async function getUnreadNotificationCount(userId: string): Promise<number> {
+  if (!userId) return 0
+
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', userId)
+    .is('read_at', null)
+
+  throwIfError(error)
+  return count ?? 0
+}
+
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', notificationId)
+    .is('read_at', null)
+
+  throwIfError(error)
+}
+
+export async function markAllNotificationsRead(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('recipient_id', userId)
+    .is('read_at', null)
+
+  throwIfError(error)
+}
+
+export async function createReport(
+  reporterId: string,
+  input: ReportInput,
+): Promise<void> {
+  const { error } = await supabase.from('reports').insert({
+    reporter_id: reporterId,
+    post_id: input.postId ?? null,
+    comment_id: input.commentId ?? null,
+    reason: input.reason,
+    details: input.details?.trim() ?? '',
+  })
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('أبلغت عن هذا المحتوى من قبل.')
+    }
+    throw new Error(error.message)
+  }
+}
+
 
 export async function isUsernameAvailable(username: string): Promise<boolean> {
   const { count, error } = await supabase

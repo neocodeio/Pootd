@@ -10,13 +10,16 @@ import { useAuth } from '@/hooks/use-auth'
 import {
   useBookmarkedPostIds,
   useBookmarkedPosts,
+  useBookmarkedPostsCount,
   useLikedPostIds,
   useLikedPosts,
+  useLikedPostsCount,
   useProfile,
   useProfileStats,
   useUserPosts,
 } from '@/hooks/use-pootd'
 import { formatCount } from '@/lib/format'
+import { flattenPages } from '@/lib/pagination'
 
 type ProfileTab = 'posts' | 'likes' | 'saved'
 
@@ -70,11 +73,17 @@ export function ProfilePage() {
   const likedPostsQuery = useLikedPosts(profile?.id)
   const statsQuery = useProfileStats(profile?.id)
   const savedQuery = useBookmarkedPosts(isOwn ? profile?.id : undefined)
+  const likedCountQuery = useLikedPostsCount(profile?.id)
+  const savedCountQuery = useBookmarkedPostsCount(isOwn ? profile?.id : undefined)
+
+  const posts = flattenPages(postsQuery.data)
+  const likedPosts = flattenPages(likedPostsQuery.data)
+  const savedPosts = flattenPages(savedQuery.data)
 
   const allPostIds = [
-    ...(postsQuery.data?.map((post) => post.id) ?? []),
-    ...(likedPostsQuery.data?.map((post) => post.id) ?? []),
-    ...(savedQuery.data?.map((post) => post.id) ?? []),
+    ...(posts?.map((post) => post.id) ?? []),
+    ...(likedPosts?.map((post) => post.id) ?? []),
+    ...(savedPosts?.map((post) => post.id) ?? []),
   ]
   const likedIdsQuery = useLikedPostIds(allPostIds)
   const bookmarkedIdsQuery = useBookmarkedPostIds(allPostIds)
@@ -138,7 +147,9 @@ export function ProfilePage() {
           >
             الإعجابات
             <span className="text-xs tabular-nums text-muted-foreground">
-              {likedPostsQuery.data?.length ?? '—'}
+              {likedCountQuery.data !== undefined
+                ? formatCount(likedCountQuery.data)
+                : '—'}
             </span>
           </TabsTrigger>
           {isOwn ? (
@@ -148,7 +159,9 @@ export function ProfilePage() {
             >
               المحفوظات
               <span className="text-xs tabular-nums text-muted-foreground">
-                {savedQuery.data?.length ?? '—'}
+                {savedCountQuery.data !== undefined
+                  ? formatCount(savedCountQuery.data)
+                  : '—'}
               </span>
             </TabsTrigger>
           ) : null}
@@ -157,12 +170,15 @@ export function ProfilePage() {
 
       {tab === 'posts' ? (
         <PostList
-          posts={postsQuery.data}
+          posts={posts}
           isLoading={postsQuery.isLoading}
           error={postsQuery.error}
           likedIds={likedIdsQuery.data}
           bookmarkedIds={bookmarkedIdsQuery.data}
           onRetry={() => void postsQuery.refetch()}
+          hasMore={postsQuery.hasNextPage}
+          isLoadingMore={postsQuery.isFetchingNextPage}
+          onLoadMore={() => void postsQuery.fetchNextPage()}
           emptyTitle={isOwn ? 'ما نشرت شي بعد' : 'ما فيه منشورات بعد'}
           emptyDescription={
             isOwn
@@ -179,12 +195,15 @@ export function ProfilePage() {
         />
       ) : tab === 'likes' ? (
         <PostList
-          posts={likedPostsQuery.data}
+          posts={likedPosts}
           isLoading={likedPostsQuery.isLoading}
           error={likedPostsQuery.error}
           likedIds={likedIdsQuery.data}
           bookmarkedIds={bookmarkedIdsQuery.data}
           onRetry={() => void likedPostsQuery.refetch()}
+          hasMore={likedPostsQuery.hasNextPage}
+          isLoadingMore={likedPostsQuery.isFetchingNextPage}
+          onLoadMore={() => void likedPostsQuery.fetchNextPage()}
           emptyTitle={isOwn ? 'ما أعجبت بشي بعد' : 'ما فيه إعجابات بعد'}
           emptyDescription={
             isOwn
@@ -194,12 +213,15 @@ export function ProfilePage() {
         />
       ) : (
         <PostList
-          posts={savedQuery.data}
+          posts={savedPosts}
           isLoading={savedQuery.isLoading}
           error={savedQuery.error}
           likedIds={likedIdsQuery.data}
           bookmarkedIds={bookmarkedIdsQuery.data}
           onRetry={() => void savedQuery.refetch()}
+          hasMore={savedQuery.hasNextPage}
+          isLoadingMore={savedQuery.isFetchingNextPage}
+          onLoadMore={() => void savedQuery.fetchNextPage()}
           emptyTitle="ما فيه منشورات محفوظة"
           emptyDescription="احفظ المنشورات المهمة من زر الحفظ، وتلقاها هنا."
           emptyAction={

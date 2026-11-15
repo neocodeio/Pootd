@@ -36,7 +36,10 @@ pootd/
       ├─ 0001_init.sql       schema, RLS, triggers, storage
       ├─ 0002_email_otp.sql  OTP table + service-role functions
       ├─ 0003_profile_cover.sql  cover image column + covers bucket
-      └─ 0004_bookmarks.sql  saved posts table + RLS
+      ├─ 0004_bookmarks.sql  saved posts table + RLS
+      ├─ 0005_notifications.sql  notifications table, triggers, RLS
+      ├─ 0006_reports.sql    reports table + owner-only RLS
+      └─ 0007_rate_limits.sql  post/comment rate-limit triggers
 ```
 
 ## Setup
@@ -48,8 +51,11 @@ Follow [`backend/README.md`](backend/README.md). In short:
 1. Create a project at [supabase.com](https://supabase.com).
 2. Run `backend/supabase/migrations/0001_init.sql`,
    `backend/supabase/migrations/0002_email_otp.sql`,
-   `backend/supabase/migrations/0003_profile_cover.sql`, and
-   `backend/supabase/migrations/0004_bookmarks.sql` in the **SQL Editor**.
+   `backend/supabase/migrations/0003_profile_cover.sql`,
+   `backend/supabase/migrations/0004_bookmarks.sql`,
+   `backend/supabase/migrations/0005_notifications.sql`,
+   `backend/supabase/migrations/0006_reports.sql`, and
+   `backend/supabase/migrations/0007_rate_limits.sql` in the **SQL Editor**.
 3. Keep **Confirm email enabled**. The OTP service confirms users after a valid
    4-digit code.
 4. Set **Site URL** to `http://localhost:5173` and add

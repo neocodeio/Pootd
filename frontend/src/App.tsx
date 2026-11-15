@@ -38,6 +38,19 @@ const VerifyPage = lazy(() =>
 const SearchPage = lazy(() =>
   import('@/pages/search').then((module) => ({ default: module.SearchPage })),
 )
+const NotificationsPage = lazy(() =>
+  import('@/pages/notifications').then((module) => ({
+    default: module.NotificationsPage,
+  })),
+)
+const ResetPage = lazy(() =>
+  import('@/pages/reset').then((module) => ({ default: module.ResetPage })),
+)
+const ResetPasswordPage = lazy(() =>
+  import('@/pages/reset-password').then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+)
 const NotFoundPage = lazy(() =>
   import('@/pages/not-found').then((module) => ({ default: module.NotFoundPage })),
 )
@@ -86,6 +99,14 @@ export default function App() {
               <Route index element={<FeedPage />} />
               <Route path="explore" element={<ExplorePage />} />
               <Route path="search" element={<SearchPage />} />
+              <Route
+                path="notifications"
+                element={
+                  <RequireAuth>
+                    <NotificationsPage />
+                  </RequireAuth>
+                }
+              />
               <Route path="tags/:tag" element={<TagPage />} />
               <Route path="p/:id" element={<PostPage />} />
               <Route path="u/:username" element={<ProfilePage />} />
@@ -102,6 +123,8 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/reset" element={<ResetPage />} />
+            <Route path="/reset/password" element={<ResetPasswordPage />} />
           </Routes>
         </Suspense>
         <Toaster theme={resolvedTheme} position="bottom-center" />

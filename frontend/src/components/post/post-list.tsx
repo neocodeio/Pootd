@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Loader2 } from 'lucide-react'
 import { EmptyState } from '@/components/empty-state'
 import { PostCard } from '@/components/post/post-card'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,9 @@ export function PostList({
   emptyDescription,
   emptyAction,
   onRetry,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
 }: {
   posts: PostWithAuthor[] | undefined
   isLoading: boolean
@@ -42,6 +46,9 @@ export function PostList({
   emptyDescription?: string
   emptyAction?: ReactNode
   onRetry?: () => void
+  hasMore?: boolean
+  isLoadingMore?: boolean
+  onLoadMore?: () => void
 }) {
   if (isLoading) {
     return (
@@ -92,6 +99,22 @@ export function PostList({
           bookmarked={bookmarked.has(post.id)}
         />
       ))}
+
+      {hasMore && onLoadMore ? (
+        <div className="flex justify-center pt-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {isLoadingMore ? <Loader2 className="animate-spin" /> : null}
+            حمّل المزيد
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }

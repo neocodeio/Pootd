@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Image, Loader2, LogOut, Trash } from 'lucide-react'
+import { ArrowRight, Image, KeyRound, Loader2, LogOut, Mail, Trash } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ImagePreview } from '@/components/image-preview'
 import { ThemeOptions } from '@/components/theme-options'
 import { UserAvatar } from '@/components/user-avatar'
@@ -14,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/hooks/use-auth'
 import {
+  useDeleteAccount,
   useRemoveCover,
   useUpdateAvatar,
   useUpdateCover,
@@ -21,6 +23,7 @@ import {
 } from '@/hooks/use-mutations'
 import { supabase } from '@/lib/supabase'
 import {
+  isEmail,
   isHttpsUrl,
   normalizeUrl,
   normalizeUsername,
@@ -43,6 +46,7 @@ export function SettingsPage() {
   const updateAvatar = useUpdateAvatar()
   const updateCover = useUpdateCover()
   const removeCover = useRemoveCover()
+  const deleteAccount = useDeleteAccount()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const initializedFor = useRef<string | null>(null)
@@ -57,6 +61,11 @@ export function SettingsPage() {
   const [error, setError] = useState('')
   const [coverPreviewOpen, setCoverPreviewOpen] = useState(false)
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailPending, setEmailPending] = useState(false)
+  const [resetPending, setResetPending] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState('')
 
   useEffect(() => {
     if (profile && initializedFor.current !== profile.id) {
@@ -190,6 +199,76 @@ export function SettingsPage() {
     queryClient.clear()
     toast.success('تم تسجيل الخروج')
     navigate('/')
+  }
+
+  async function handleEmailChange(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const email = newEmail.trim().toLowerCase()
+
+    if (!isEmail(email)) {
+      toast.error('أدخل بريدًا إلكترونيًا صحيحًا.')
+      return
+    }
+    if (email === user?.email?.toLowerCase()) {
+      toast.error('هذا بريدك الحالي.')
+      return
+    }
+
+    setEmailPending(true)
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ email })
+      if (updateError) {
+        toast.error(updateError.message)
+        return
+      }
+      setNewEmail('')
+      toast.success('أرسلنا رابط تأكيد للبريد الجديد. افتحه لإكمال التغيير.')
+    } catch (unknownError) {
+      toast.error(
+        unknownError instanceof Error ? unknownError.message : 'حدث خطأ غير متوقع.',
+      )
+    } finally {
+      setEmailPending(false)
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!user?.email) return
+
+    setResetPending(true)
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        user.email,
+        { redirectTo: `${window.location.origin}/reset/password` },
+      )
+      if (resetError) {
+        toast.error(resetError.message)
+        return
+      }
+      toast.success('أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك.')
+    } catch (unknownError) {
+      toast.error(
+        unknownError instanceof Error ? unknownError.message : 'حدث خطأ غير متوقع.',
+      )
+    } finally {
+      setResetPending(false)
+    }
+  }
+
+  function handleDeleteAccount() {
+    if (deleteConfirm.trim() !== 'حذف') {
+      toast.error('اكتب «حذف» للتأكيد.')
+      return
+    }
+
+    deleteAccount.mutate(undefined, {
+      onSuccess: () => {
+        setDeleteOpen(false)
+        toast.success('تم حذف حسابك.')
+        navigate('/', { replace: true })
+      },
+      onError: (deleteError) => toast.error(deleteError.message),
+    })
   }
 
   return (
@@ -462,6 +541,83 @@ export function SettingsPage() {
             </div>
           </div>
         </section>
+
+        <section className="border-t border-border p-4 sm:p-5">
+          <h2 className="text-sm font-semibold">الأمان</h2>
+          <div className="mt-4 space-y-5">
+            <form onSubmit={handleEmailChange} className="space-y-2">
+              <Label htmlFor="new-email">تغيير البريد الإلكتروني</Label>
+              <p className="text-xs text-muted-foreground">
+                الحالي: <span dir="ltr">{user?.email}</span>
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="new-email"
+                  type="email"
+                  value={newEmail}
+                  onChange={(event) => setNewEmail(event.target.value)}
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="new@example.com"
+                  dir="ltr"
+                  className="text-start"
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="sm"
+                  disabled={emailPending || !newEmail.trim()}
+                >
+                  {emailPending ? <Loader2 className="animate-spin" /> : <Mail />}
+                  إرسال رابط التأكيد
+                </Button>
+              </div>
+              <p className="text-xs leading-6 text-muted-foreground">
+                نرسل رابطًا للبريد الجديد لتأكيده قبل أن يتغيّر.
+              </p>
+            </form>
+
+            <div className="border-t border-border pt-4">
+              <p className="text-sm font-medium">كلمة المرور</p>
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                نرسل رابطًا آمنًا لبريدك لتعيين كلمة مرور جديدة.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void handleResetPassword()}
+                disabled={resetPending || !user?.email}
+                className="mt-3"
+              >
+                {resetPending ? <Loader2 className="animate-spin" /> : <KeyRound />}
+                إرسال رابط إعادة التعيين
+              </Button>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <p className="text-sm font-medium">حذف الحساب</p>
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                حذف الحساب يمسح ملفك ومنشوراتك وتعليقاتك وإعجاباتك نهائيًا. ما
+                تقدر تتراجع عن هذا الإجراء.
+              </p>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setDeleteConfirm('')
+                  setDeleteOpen(true)
+                }}
+                className="mt-3"
+              >
+                <Trash />
+                حذف الحساب
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
 
       {profile.cover_image_url ? (
@@ -481,6 +637,30 @@ export function SettingsPage() {
           alt="الصورة الشخصية"
         />
       ) : null}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          setDeleteOpen(open)
+          if (!open) setDeleteConfirm('')
+        }}
+        title="حذف الحساب"
+        description="سيتم حذف حسابك وملفك ومنشوراتك وتعليقاتك نهائيًا. ما تقدر تتراجع عن هذا الإجراء."
+        confirmLabel="حذف الحساب نهائيًا"
+        pending={deleteAccount.isPending}
+        onConfirm={handleDeleteAccount}
+      >
+        <div className="grid gap-2">
+          <Label htmlFor="delete-confirm">اكتب «حذف» للتأكيد</Label>
+          <Input
+            id="delete-confirm"
+            value={deleteConfirm}
+            onChange={(event) => setDeleteConfirm(event.target.value)}
+            autoComplete="off"
+            dir="auto"
+          />
+        </div>
+      </ConfirmDialog>
     </div>
   )
 }

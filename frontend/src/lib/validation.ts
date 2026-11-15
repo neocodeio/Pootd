@@ -9,6 +9,29 @@ export function normalizeTag(input: string): string {
   return input.trim().toLowerCase().replace(/^#+/, '')
 }
 
+export const MAX_TAGS = 5
+
+/** Finds `#hashtag` tokens in post content — Latin or Arabic. */
+export const HASHTAG_REGEX = /(?<![A-Za-z0-9_#/])#[\p{L}\p{N}_-]+/gu
+
+/**
+ * Extracts the tags that the backend can store from the post content the user
+ * typed. Hashtags are written inline (e.g. "hi #hacking"), so the tag list is
+ * derived instead of entered separately.
+ */
+export function extractTags(content: string): string[] {
+  const tags: string[] = []
+
+  for (const match of content.matchAll(HASHTAG_REGEX)) {
+    const tag = normalizeTag(match[0])
+    if (!TAG_REGEX.test(tag) || tags.includes(tag)) continue
+    tags.push(tag)
+    if (tags.length === MAX_TAGS) break
+  }
+
+  return tags
+}
+
 export function normalizeUrl(input: string): string {
   let value = input.trim()
   if (!value) return ''

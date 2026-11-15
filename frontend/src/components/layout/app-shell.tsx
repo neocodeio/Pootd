@@ -3,6 +3,7 @@ import { Compass, Home, PenLine, UserRound } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Brand } from '@/components/brand'
 import { MobileNav } from '@/components/layout/mobile-nav'
+import { NotificationBell } from '@/components/layout/notification-bell'
 import { UserMenu } from '@/components/layout/user-menu'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
@@ -71,6 +72,7 @@ function DesktopHeader() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <NotificationBell />
           {loading ? (
             <>
               <Skeleton className="h-9 w-32 rounded-lg" />
@@ -110,6 +112,7 @@ function MobileHeader() {
       <Brand variant="compact" />
       <div className="flex items-center gap-1.5">
         <ThemeToggle />
+        <NotificationBell />
         {loading ? (
           <Skeleton className="size-9 rounded-full" />
         ) : user ? (

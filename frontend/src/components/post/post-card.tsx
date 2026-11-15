@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ChevronLeft,
+  Flag,
   Link2,
   Loader2,
   MessageSquare,
@@ -15,9 +16,9 @@ import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { BookmarkButton } from '@/components/post/bookmark-button'
 import { LikeButton } from '@/components/post/like-button'
-import { TagInput } from '@/components/post/tag-input'
+import { PostContent } from '@/components/post/post-content'
+import { ReportDialog } from '@/components/report-dialog'
 import { UserAvatar } from '@/components/user-avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -32,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/hooks/use-auth'
 import { useDeletePost, useUpdatePost } from '@/hooks/use-mutations'
 import { timeAgo } from '@/lib/format'
+import { extractTags } from '@/lib/validation'
 import type { PostWithAuthor } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -54,9 +56,9 @@ export function PostCard({
   const deletePost = useDeletePost()
   const updatePost = useUpdatePost()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftContent, setDraftContent] = useState(post.content)
-  const [draftTags, setDraftTags] = useState<string[]>(post.tags)
 
   const isAuthor = user?.id === post.author_id
   const shouldClamp =
@@ -85,13 +87,11 @@ export function PostCard({
 
   function startEditing() {
     setDraftContent(post.content)
-    setDraftTags(post.tags)
     setEditing(true)
   }
 
   function cancelEditing() {
     setDraftContent(post.content)
-    setDraftTags(post.tags)
     setEditing(false)
   }
 
@@ -107,7 +107,7 @@ export function PostCard({
     }
 
     updatePost.mutate(
-      { postId: post.id, content, tags: draftTags },
+      { postId: post.id, content, tags: extractTags(content) },
       {
         onSuccess: () => {
           setEditing(false)
@@ -136,14 +136,6 @@ export function PostCard({
               dir="auto"
               autoFocus
               className="min-h-32 resize-y border-0 bg-transparent p-0 px-1 text-[15px] leading-8 shadow-none focus-visible:ring-0"
-            />
-
-            <TagInput
-              tags={draftTags}
-              onAdd={(tag) => setDraftTags((current) => [...current, tag])}
-              onRemove={(tag) =>
-                setDraftTags((current) => current.filter((item) => item !== tag))
-              }
             />
 
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
@@ -262,21 +254,27 @@ export function PostCard({
                       حذف المنشور
                     </DropdownMenuItem>
                   </>
+                ) : user ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setReportOpen(true)}>
+                      <Flag />
+                      الإبلاغ عن المنشور
+                    </DropdownMenuItem>
+                  </>
                 ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          <p
-            dir="auto"
+          <PostContent
+            content={post.content}
             className={cn(
-              'mt-2 whitespace-pre-wrap break-words text-foreground/95',
+              'mt-2',
               detail ? 'text-[16px] leading-8' : 'text-[15px] leading-8',
               shouldClamp && 'line-clamp-10',
             )}
-          >
-            {post.content}
-          </p>
+          />
 
           {shouldClamp ? (
             <Link
@@ -286,23 +284,6 @@ export function PostCard({
               اقرأ المنشور كاملًا
               <ChevronLeft className="size-3.5" />
             </Link>
-          ) : null}
-
-          {post.tags.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {post.tags.map((tag) => (
-                <Badge
-                  key={tag}
-                  asChild
-                  variant="secondary"
-                  className="h-auto rounded-full px-2.5 py-1 text-xs font-normal text-muted-foreground hover:text-foreground"
-                >
-                  <Link to={`/tags/${tag}`} dir="ltr">
-                    #{tag}
-                  </Link>
-                </Badge>
-              ))}
-            </div>
           ) : null}
 
           <div className="mt-3 flex items-center gap-0.5">
@@ -342,6 +323,8 @@ export function PostCard({
         pending={deletePost.isPending}
         onConfirm={handleDelete}
       />
+
+      <ReportDialog open={reportOpen} onOpenChange={setReportOpen} postId={post.id} />
     </Card>
   )
 }

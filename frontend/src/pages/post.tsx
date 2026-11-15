@@ -76,7 +76,11 @@ export function PostPage() {
             bookmarked={bookmarkedIds.data?.includes(post.id) ?? false}
             detail
           />
-          <CommentSection postId={post.id} postAuthorId={post.author_id} />
+          <CommentSection
+            postId={post.id}
+            postAuthorId={post.author_id}
+            commentCount={post.comment_count}
+          />
         </>
       )}
     </div>

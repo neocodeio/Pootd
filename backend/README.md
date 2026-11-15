@@ -18,6 +18,9 @@ server.
    - `supabase/migrations/0002_email_otp.sql`
    - `supabase/migrations/0003_profile_cover.sql`
    - `supabase/migrations/0004_bookmarks.sql`
+   - `supabase/migrations/0005_notifications.sql`
+   - `supabase/migrations/0006_reports.sql`
+   - `supabase/migrations/0007_rate_limits.sql`
 3. Open **Authentication → Sign In / Providers → Email** and keep
    **Confirm email enabled**. The OTP service creates users as unconfirmed and
    confirms them only after a valid 4-digit code.
@@ -65,6 +68,10 @@ The `0001_init.sql` migration creates the public `avatars` storage bucket
 the public `covers` storage bucket (5 MB max, PNG/JPEG/WebP) with the same
 per-user upload policies. The `0004_bookmarks.sql` migration adds the
 `bookmarks` table for saved posts, readable and writable only by its owner.
+The `0005_notifications.sql` migration adds the notifications table and the
+like/comment triggers that fill it. `0006_reports.sql` adds write-only reports
+(one per member per item), and `0007_rate_limits.sql` enforces 5 posts and 20
+comments per 10 minutes per user in the database.
 
 If the API does not pick up the new `cover_image_url` column right away, run
 `NOTIFY pgrst, 'reload schema';` in the SQL Editor.
@@ -79,6 +86,10 @@ The frontend calls these endpoints using `VITE_API_URL`:
   limits.
 - `POST /api/auth/otp/verify` — verifies the code, confirms the Supabase user,
   and returns the user ID.
+- `DELETE /api/account` — deletes the signed-in account. Requires the Supabase
+  access token as `Authorization: Bearer <token>`; the service role removes the
+  auth user and the database cascades the profile, posts, comments, likes and
+  bookmarks.
 - `GET /health` — service health check.
 
 OTP defaults:

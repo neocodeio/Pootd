@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { TagInput } from '@/components/post/tag-input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -11,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { UserAvatar } from '@/components/user-avatar'
 import { useAuth } from '@/hooks/use-auth'
 import { useCreatePost } from '@/hooks/use-mutations'
+import { extractTags } from '@/lib/validation'
 
 const MAX_LENGTH = 4000
 
@@ -39,8 +39,6 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
   const { user, profile, loading } = useAuth()
   const createPost = useCreatePost()
   const [content, setContent] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-  const [tagReset, setTagReset] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -79,12 +77,10 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
     if (!canSubmit) return
 
     createPost.mutate(
-      { content, tags },
+      { content, tags: extractTags(content) },
       {
         onSuccess: () => {
           setContent('')
-          setTags([])
-          setTagReset((current) => current + 1)
           toast.success('تم النشر')
         },
         onError: (error) => toast.error(error.message),
@@ -124,13 +120,6 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
               rows={2}
               dir="auto"
               className="min-h-24 resize-none border-0 bg-transparent p-0 px-1 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
-            />
-
-            <TagInput
-              key={tagReset}
-              tags={tags}
-              onAdd={(tag) => setTags((current) => [...current, tag])}
-              onRemove={(tag) => setTags((current) => current.filter((item) => item !== tag))}
             />
 
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">

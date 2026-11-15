@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
+import { OtpInput } from '@/components/auth/otp-input'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { OtpApiError, resendOtp, verifyEmailOtp } from '@/lib/otp-api'
 
@@ -20,6 +20,8 @@ export function OtpVerification({
   onVerified,
 }: OtpVerificationProps) {
   const [code, setCode] = useState('')
+  const [invalidCode, setInvalidCode] = useState(false)
+  const [otpKey, setOtpKey] = useState(0)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [pending, setPending] = useState(false)
@@ -36,6 +38,7 @@ export function OtpVerification({
     event.preventDefault()
     setError('')
     setNotice('')
+    setInvalidCode(false)
 
     if (!/^\d{4}$/.test(code)) {
       setError('أدخل الرمز المكوّن من 4 أرقام.')
@@ -52,6 +55,7 @@ export function OtpVerification({
         unknownError.code === 'OTP_INVALID' &&
         typeof unknownError.attemptsRemaining === 'number'
       ) {
+        setInvalidCode(true)
         setError(`${unknownError.message} باقي ${unknownError.attemptsRemaining} محاولات.`)
       } else {
         setError(
@@ -73,6 +77,8 @@ export function OtpVerification({
     try {
       const result = await resendOtp({ email, userId })
       setCode('')
+      setInvalidCode(false)
+      setOtpKey((current) => current + 1)
       setResendIn(result.resendAfterSeconds)
       setNotice('أرسلنا رمزًا جديدًا. تحقق من بريدك.')
     } catch (unknownError) {
@@ -110,17 +116,15 @@ export function OtpVerification({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-2">
           <Label htmlFor="otp-code">رمز التحقق</Label>
-          <Input
+          <OtpInput
+            key={otpKey}
             id="otp-code"
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 4))}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]*"
-            maxLength={4}
-            dir="ltr"
-            className="h-14 text-center font-mono text-2xl tracking-[0.6em]"
-            placeholder="0000"
+            onChange={(next) => {
+              setCode(next)
+              if (invalidCode) setInvalidCode(false)
+            }}
+            disabled={pending}
+            invalid={invalidCode}
             autoFocus
           />
           <p className="text-xs leading-6 text-muted-foreground">

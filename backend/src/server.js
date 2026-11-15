@@ -22,8 +22,8 @@ app.use(
       }
       callback(new Error('Not allowed by CORS'))
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86_400,
   }),
 )
@@ -186,6 +186,38 @@ app.post('/api/auth/otp/verify', async (req, res) => {
   const result = await verifyOtp({ email, code })
   res.json({ ok: true, userId: result.userId })
 })
+
+app.delete(
+  '/api/account',
+  createRateLimiter({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: 'محاولات كثيرة. انتظر ثم حاول مرة ثانية.',
+  }),
+  async (req, res) => {
+    const header = req.headers.authorization || ''
+    const token = header.startsWith('Bearer ') ? header.slice(7).trim() : ''
+
+    if (!token) {
+      throw new AppError('UNAUTHORIZED', 'سجّل دخولك أولًا.', 401)
+    }
+
+    const { data, error } = await supabase.auth.getUser(token)
+
+    if (error || !data.user) {
+      throw new AppError('UNAUTHORIZED', 'الجلسة غير صالحة. سجّل دخولك من جديد.', 401)
+    }
+
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(data.user.id)
+
+    if (deleteError) {
+      console.error('[pootd-otp] Failed to delete account:', deleteError.message)
+      throw new AppError('SERVER_ERROR', 'تعذر حذف الحساب. حاول مرة ثانية.', 500)
+    }
+
+    res.json({ ok: true })
+  },
+)
 
 app.use('/api', (_req, res) => {
   res.status(404).json({

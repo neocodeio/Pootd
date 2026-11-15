@@ -1,11 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { InfiniteData } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { deleteAccount } from '@/lib/account-api'
 import {
   createComment,
   createPost,
+  createReport,
   deleteComment,
   deleteCoverFile,
   deletePost,
+  markAllNotificationsRead,
+  markNotificationRead,
   toggleBookmark,
   toggleLike,
   updatePost,
@@ -14,20 +19,32 @@ import {
   uploadCover,
 } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
-import type { PostWithAuthor, ProfileUpdate } from '@/lib/types'
+import { supabase } from '@/lib/supabase'
+import type { Page, PostWithAuthor, ProfileUpdate, ReportInput } from '@/lib/types'
 import { useAuth } from './use-auth'
 
+type PostsData = InfiniteData<Page<PostWithAuthor>>
+
 function bumpLikeCount(
-  posts: PostWithAuthor[] | undefined,
+  data: PostsData | undefined,
   postId: string,
   delta: number,
-): PostWithAuthor[] | undefined {
-  return posts?.map((post) =>
-    post.id === postId
-      ? { ...post, like_count: Math.max(0, post.like_count + delta) }
-      : post,
-  )
+): PostsData | undefined {
+  if (!data) return data
+
+  return {
+    ...data,
+    pages: data.pages.map((page) => ({
+      ...page,
+      items: page.items.map((post) =>
+        post.id === postId
+          ? { ...post, like_count: Math.max(0, post.like_count + delta) }
+          : post,
+      ),
+    })),
+  }
 }
+
 
 export function useToggleLike(postId: string) {
   const { user } = useAuth()
@@ -51,14 +68,17 @@ export function useToggleLike(postId: string) {
         queryClient.cancelQueries({ queryKey: queryKeys.postLiked(user.id, postId) }),
       ])
 
-      queryClient.setQueriesData<PostWithAuthor[]>({ queryKey: ['feed'] }, (posts) =>
-        bumpLikeCount(posts, postId, delta),
+      queryClient.setQueriesData<PostsData>({ queryKey: ['feed'] }, (data) =>
+        bumpLikeCount(data, postId, delta),
       )
-      queryClient.setQueriesData<PostWithAuthor[]>({ queryKey: ['user-posts'] }, (posts) =>
-        bumpLikeCount(posts, postId, delta),
+      queryClient.setQueriesData<PostsData>({ queryKey: ['user-posts'] }, (data) =>
+        bumpLikeCount(data, postId, delta),
       )
-      queryClient.setQueriesData<PostWithAuthor[]>({ queryKey: ['liked-posts'] }, (posts) =>
-        bumpLikeCount(posts, postId, delta),
+      queryClient.setQueriesData<PostsData>({ queryKey: ['liked-posts'] }, (data) =>
+        bumpLikeCount(data, postId, delta),
+      )
+      queryClient.setQueriesData<PostsData>({ queryKey: ['bookmarked-posts'] }, (data) =>
+        bumpLikeCount(data, postId, delta),
       )
 
       const post = queryClient.getQueryData<PostWithAuthor | null>(queryKeys.post(postId))
@@ -295,6 +315,64 @@ export function useUpdateCover() {
       queryClient.invalidateQueries({ queryKey: ['comments'] })
       queryClient.invalidateQueries({ queryKey: ['user-posts'] })
       queryClient.invalidateQueries({ queryKey: ['liked-posts'] })
+    },
+  })
+}
+
+export function useMarkNotificationRead() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (notificationId: string) => markNotificationRead(notificationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnread(user.id) })
+      }
+    },
+  })
+}
+
+export function useMarkAllNotificationsRead() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => {
+      if (!user) throw new Error('سجّل دخولك أولًا.')
+      return markAllNotificationsRead(user.id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnread(user.id) })
+      }
+    },
+  })
+}
+
+export function useCreateReport() {
+  const { user } = useAuth()
+
+  return useMutation({
+    mutationFn: (input: ReportInput) => {
+      if (!user) throw new Error('سجّل دخولك أولًا للإبلاغ عن المحتوى.')
+      return createReport(user.id, input)
+    },
+  })
+}
+
+export function useDeleteAccount() {
+  const { session } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!session) throw new Error('سجّل دخولك أولًا.')
+      await deleteAccount(session.access_token)
+      await supabase.auth.signOut()
+      queryClient.clear()
     },
   })
 }

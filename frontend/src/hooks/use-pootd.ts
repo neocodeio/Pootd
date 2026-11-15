@@ -1,28 +1,34 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
   getBookmarkedPostIds,
   getBookmarkedPosts,
+  getBookmarkedPostsCount,
   getComments,
   getFeed,
   getLikedPostIds,
   getLikedPosts,
+  getLikedPostsCount,
+  getNotifications,
   getPost,
   getProfileByUsername,
   getProfileStats,
   getTrendingTags,
+  getUnreadNotificationCount,
   getUserPosts,
   isPostLiked,
   searchPosts,
   searchProfiles,
 } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
-import type { SortOption } from '@/lib/types'
+import type { Cursor, SortOption } from '@/lib/types'
 import { useAuth } from './use-auth'
 
 export function useFeed(tag: string | undefined, sort: SortOption) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.feed(tag, sort),
-    queryFn: () => getFeed({ tag, sort }),
+    queryFn: ({ pageParam }) => getFeed({ tag, sort, cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: 30_000,
   })
 }
@@ -36,9 +42,11 @@ export function usePost(postId: string) {
 }
 
 export function useComments(postId: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.comments(postId),
-    queryFn: () => getComments(postId),
+    queryFn: ({ pageParam }) => getComments(postId, { cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: 15_000,
   })
 }
@@ -67,18 +75,31 @@ export function usePostLiked(postId: string) {
 }
 
 export function useUserPosts(userId: string | undefined) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.userPosts(userId ?? ''),
-    queryFn: () => getUserPosts(userId ?? ''),
+    queryFn: ({ pageParam }) => getUserPosts(userId ?? '', { cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: Boolean(userId),
     staleTime: 30_000,
   })
 }
 
 export function useLikedPosts(userId: string | undefined) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.likedPosts(userId ?? ''),
-    queryFn: () => getLikedPosts(userId ?? ''),
+    queryFn: ({ pageParam }) => getLikedPosts(userId ?? '', { cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: Boolean(userId),
+    staleTime: 30_000,
+  })
+}
+
+export function useLikedPostsCount(userId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.likedPostsCount(userId ?? ''),
+    queryFn: () => getLikedPostsCount(userId ?? ''),
     enabled: Boolean(userId),
     staleTime: 30_000,
   })
@@ -141,10 +162,46 @@ export function useBookmarkedPostIds(postIds: string[]) {
 }
 
 export function useBookmarkedPosts(userId: string | undefined) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.bookmarkedPosts(userId ?? ''),
-    queryFn: () => getBookmarkedPosts(userId ?? '', 30),
+    queryFn: ({ pageParam }) => getBookmarkedPosts(userId ?? '', { cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: Boolean(userId),
     staleTime: 30_000,
+  })
+}
+
+export function useBookmarkedPostsCount(userId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.bookmarkedPostsCount(userId ?? ''),
+    queryFn: () => getBookmarkedPostsCount(userId ?? ''),
+    enabled: Boolean(userId),
+    staleTime: 30_000,
+  })
+}
+
+export function useNotifications() {
+  const { user } = useAuth()
+
+  return useInfiniteQuery({
+    queryKey: queryKeys.notifications(user?.id ?? 'anon'),
+    queryFn: ({ pageParam }) => getNotifications(user?.id ?? '', { cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: Boolean(user),
+    staleTime: 15_000,
+  })
+}
+
+export function useUnreadNotificationCount() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: queryKeys.notificationsUnread(user?.id ?? 'anon'),
+    queryFn: () => getUnreadNotificationCount(user?.id ?? ''),
+    enabled: Boolean(user),
+    staleTime: 15_000,
+    refetchInterval: 60_000,
   })
 }
