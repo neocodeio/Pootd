@@ -5,6 +5,8 @@ import {
   getBookmarkedPostsCount,
   getComments,
   getFeed,
+  getFollowState,
+  getFollows,
   getLikedPostIds,
   getLikedPosts,
   getLikedPostsCount,
@@ -119,6 +121,24 @@ export function useProfileStats(userId: string | undefined) {
     queryKey: queryKeys.profileStats(userId ?? ''),
     queryFn: () => getProfileStats(userId ?? ''),
     enabled: Boolean(userId),
+    staleTime: 30_000,
+  })
+}
+
+export function useFollows(userId: string | undefined, kind: 'followers' | 'following') {
+  return useQuery({
+    queryKey: queryKeys.follows(userId ?? '', kind),
+    queryFn: () => getFollows(userId ?? '', kind),
+    enabled: Boolean(userId),
+    staleTime: 30_000,
+  })
+}
+
+export function useFollowState(userId: string | undefined, targetUserId: string) {
+  return useQuery({
+    queryKey: queryKeys.followsState(userId ?? '', targetUserId),
+    queryFn: () => getFollowState(userId ?? '', targetUserId),
+    enabled: Boolean(userId) && Boolean(targetUserId),
     staleTime: 30_000,
   })
 }

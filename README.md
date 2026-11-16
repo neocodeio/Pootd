@@ -39,7 +39,11 @@ pootd/
       ├─ 0004_bookmarks.sql  saved posts table + RLS
       ├─ 0005_notifications.sql  notifications table, triggers, RLS
       ├─ 0006_reports.sql    reports table + owner-only RLS
-      └─ 0007_rate_limits.sql  post/comment rate-limit triggers
+      ├─ 0007_rate_limits.sql  post/comment rate-limit triggers
+      ├─ 0008_realtime.sql   realtime publication for live updates
+      ├─ 0009_post_edit_marker.sql  "معدّل" only after a real edit
+      ├─ 0010_follows.sql   followers / following social graph
+      └─ 0011_follows_notifications.sql  follow notifications + live follow numbers
 ```
 
 ## Setup
@@ -54,8 +58,13 @@ Follow [`backend/README.md`](backend/README.md). In short:
    `backend/supabase/migrations/0003_profile_cover.sql`,
    `backend/supabase/migrations/0004_bookmarks.sql`,
    `backend/supabase/migrations/0005_notifications.sql`,
-   `backend/supabase/migrations/0006_reports.sql`, and
-   `backend/supabase/migrations/0007_rate_limits.sql` in the **SQL Editor**.
+   `backend/supabase/migrations/0006_reports.sql`,
+   `backend/supabase/migrations/0007_rate_limits.sql`,
+   `backend/supabase/migrations/0008_realtime.sql`,
+   `backend/supabase/migrations/0009_post_edit_marker.sql`,
+   `backend/supabase/migrations/0010_follows.sql`, and
+   `backend/supabase/migrations/0011_follows_notifications.sql` in the **SQL
+   Editor**.
 3. Keep **Confirm email enabled**. The OTP service confirms users after a valid
    4-digit code.
 4. Set **Site URL** to `http://localhost:5173` and add

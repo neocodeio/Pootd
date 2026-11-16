@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/hooks/use-auth'
+import { useRealtimeSync } from '@/hooks/use-realtime'
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 
@@ -139,6 +140,8 @@ function PageFallback() {
 }
 
 export function AppShell() {
+  useRealtimeSync()
+
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <DesktopHeader />

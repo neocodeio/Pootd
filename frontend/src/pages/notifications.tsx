@@ -36,7 +36,7 @@ export function NotificationsPage() {
         <div>
           <h1 className="font-heading text-xl font-semibold tracking-tight">الإشعارات</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            الإعجابات والتعليقات على منشوراتك.
+            الإعجابات والتعليقات على منشوراتك، وكل من يتبعك.
           </p>
         </div>
         {unreadCount > 0 ? (
@@ -99,12 +99,18 @@ export function NotificationsPage() {
               const text =
                 notification.type === 'like'
                   ? 'أعجب بمنشورك'
-                  : 'علّق على منشورك'
+                  : notification.type === 'follow'
+                    ? 'بدأ يتبعك'
+                    : 'علّق على منشورك'
 
               return (
                 <Link
                   key={notification.id}
-                  to={notification.post_id ? `/p/${notification.post_id}` : '/'}
+                  to={
+                    notification.post_id
+                      ? `/p/${notification.post_id}`
+                      : `/u/${notification.actor.username}`
+                  }
                   onClick={() => {
                     if (unreadItem) markRead.mutate(notification.id)
                   }}

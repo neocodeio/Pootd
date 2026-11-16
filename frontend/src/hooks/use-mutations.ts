@@ -12,6 +12,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   toggleBookmark,
+  toggleFollow,
   toggleLike,
   updatePost,
   updateProfile,
@@ -121,6 +122,22 @@ export function useToggleLike(postId: string) {
   })
 }
 
+export function useToggleFollow() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (targetUserId: string) => toggleFollow(user?.id ?? '', targetUserId),
+    // The open profile's follower/following numbers live under the target's
+    // key, so the whole `follows` prefix is invalidated — not just the
+    // viewer's own lists. `onSettled` also repairs the state after a failure.
+    onSettled: () => {
+      if (!user) return
+      queryClient.invalidateQueries({ queryKey: ['follows'] })
+    },
+  })
+}
+
 export function useCreatePost() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -153,6 +170,9 @@ export function useDeletePost() {
       queryClient.invalidateQueries({ queryKey: ['user-posts'] })
       queryClient.invalidateQueries({ queryKey: ['profile-stats'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.trendingTags() })
+      // Deleting a post cascades the notifications that point at it.
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread'] })
       if (user) {
         queryClient.invalidateQueries({ queryKey: queryKeys.likedPosts(user.id) })
       }

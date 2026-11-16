@@ -19,5 +19,7 @@ export const queryKeys = {
   bookmarkedPostsCount: (userId: string) => ['bookmarked-posts-count', userId] as const,
   notifications: (userId: string) => ['notifications', userId] as const,
   notificationsUnread: (userId: string) => ['notifications-unread', userId] as const,
+  follows: (userId: string, kind: 'followers' | 'following') => ['follows', userId, kind] as const,
+  followsState: (userId: string, targetUserId: string) => ['follows', userId, 'state', targetUserId] as const,
 }
 

@@ -4,13 +4,15 @@
 --
 -- The app listens for live likes, comments and notifications over Supabase
 -- Realtime. A table only emits changes once it is part of the
--- `supabase_realtime` publication, so this file adds the four tables and makes
--- delete events carry their full old row (required for filtered deletes).
+-- `supabase_realtime` publication, so this file adds the four tables the app
+-- watches. Without it the live counters, comments and bell stay silent — the
+-- app keeps working through ordinary queries.
+--
+-- Deletes are not given an old payload beyond the primary key while RLS is on,
+-- so the client never reads `payload.old` columns: a removed like, comment or
+-- notification triggers a refetch instead. `replica identity` therefore stays
+-- at its default.
 -- ============================================================================
-
--- ---------------------------------------------------------------------------
--- Publication membership
--- ---------------------------------------------------------------------------
 
 do $$
 declare
@@ -33,17 +35,3 @@ begin
   end loop;
 end;
 $$;
-
--- ---------------------------------------------------------------------------
--- Old rows for delete events
---
--- Realtime only sends the primary key on delete, and it cannot apply a filter
--- (such as `recipient_id=eq.<me>`) without the rest of the row. Likes and
--- comments unsubscribe/delete by `user_id`/`post_id`; notifications disappear
--- when a like is removed, so all three need the full old row. `posts` is only
--- read on update, where the new row is always complete.
--- ---------------------------------------------------------------------------
-
-alter table public.likes replica identity full;
-alter table public.comments replica identity full;
-alter table public.notifications replica identity full;

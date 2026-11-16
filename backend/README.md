@@ -21,6 +21,10 @@ server.
    - `supabase/migrations/0005_notifications.sql`
    - `supabase/migrations/0006_reports.sql`
    - `supabase/migrations/0007_rate_limits.sql`
+   - `supabase/migrations/0008_realtime.sql`
+   - `supabase/migrations/0009_post_edit_marker.sql`
+   - `supabase/migrations/0010_follows.sql`
+   - `supabase/migrations/0011_follows_notifications.sql`
 3. Open **Authentication → Sign In / Providers → Email** and keep
    **Confirm email enabled**. The OTP service creates users as unconfirmed and
    confirms them only after a valid 4-digit code.
@@ -71,7 +75,18 @@ per-user upload policies. The `0004_bookmarks.sql` migration adds the
 The `0005_notifications.sql` migration adds the notifications table and the
 like/comment triggers that fill it. `0006_reports.sql` adds write-only reports
 (one per member per item), and `0007_rate_limits.sql` enforces 5 posts and 20
-comments per 10 minutes per user in the database.
+comments per 10 minutes per user in the database. `0008_realtime.sql` adds
+`posts`, `likes`, `comments` and `notifications` to the `supabase_realtime`
+publication — without it the live like counters, comments and bell stay silent.
+`0009_post_edit_marker.sql` swaps the posts `updated_at` trigger for one that
+only fires when the content or tags change, and clears the timestamps that the
+like/comment count updates had touched, so "معدّل" only appears after a real
+edit. `0010_follows.sql` adds the `follows` social graph (follower to following,
+with RLS-scoped writes and readable username lists) and puts it in the
+`supabase_realtime` publication. `0011_follows_notifications.sql` adds the follow
+notification type, the follow trigger and its removal on unfollow, and re-asserts
+the `follows` publication membership (guarded, so it is safe on an existing
+project that applied `0010` before that line existed).
 
 If the API does not pick up the new `cover_image_url` column right away, run
 `NOTIFY pgrst, 'reload schema';` in the SQL Editor.

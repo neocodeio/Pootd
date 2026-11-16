@@ -60,17 +60,17 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom" className="w-64 rounded-lg p-1">
-        <DropdownMenuLabel className="flex flex-col gap-1 px-2 py-2">
-          <span dir="auto" className="truncate text-sm font-semibold text-foreground">
-            {profile?.display_name ?? 'عضو'}
-          </span>
-          {profile ? (
-            <span className="truncate text-xs font-normal text-muted-foreground">
-              <span dir="ltr">@{profile.username}</span>
+        <DropdownMenuLabel className="flex items-center gap-2 px-2 py-2">
+          <UserAvatar profile={profile} name={user.email} className="size-8 shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span dir="auto" className="block truncate text-sm font-semibold text-foreground">
+              {profile?.display_name ?? 'عضو'}
             </span>
-          ) : null}
-          <span className="truncate text-xs font-normal text-muted-foreground">
-            {user.email}
+            {profile ? (
+              <span className="block truncate text-xs font-normal text-muted-foreground">
+                <span dir="ltr">@{profile.username}</span>
+              </span>
+            ) : null}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

@@ -3,10 +3,51 @@ import { Calendar, Code2, Globe, Link2, Settings, ZoomIn } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ImagePreview } from '@/components/image-preview'
+import { FollowButton } from '@/components/profile/follow-button'
+import { FollowList } from '@/components/profile/follow-list'
 import { UserAvatar } from '@/components/user-avatar'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/use-auth'
+import { useFollows } from '@/hooks/use-pootd'
 import { formatCount, formatJoined, safeHostname } from '@/lib/format'
 import type { Profile, ProfileStats } from '@/lib/types'
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="block text-xs text-muted-foreground">{label}</span>
+      <span className="mt-0.5 block text-sm font-semibold tabular-nums">
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function StatButton({
+  label,
+  value,
+  onClick,
+}: {
+  label: string
+  value: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-haspopup="dialog"
+      className="group rounded-lg text-start outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <span className="block text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+        {label}
+      </span>
+      <span className="mt-0.5 block text-sm font-semibold tabular-nums">
+        {value}
+      </span>
+    </button>
+  )
+}
 
 export function ProfileHeader({
   profile,
@@ -18,6 +59,14 @@ export function ProfileHeader({
   isOwn: boolean
 }) {
   const [preview, setPreview] = useState<{ src: string; alt: string } | null>(null)
+  const { user } = useAuth()
+  // The read policy for `follows` is signed-in only, so anonymous visitors do
+  // not request lists they can never see.
+  const followersQuery = useFollows(user ? profile.id : undefined, 'followers')
+  const followingQuery = useFollows(user ? profile.id : undefined, 'following')
+  const followers = followersQuery.data ?? []
+  const following = followingQuery.data ?? []
+  const [list, setList] = useState<{ kind: 'followers' | 'following'; open: boolean } | null>(null)
 
   async function copyProfileLink() {
     try {
@@ -90,7 +139,7 @@ export function ProfileHeader({
             />
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="outline"
@@ -107,6 +156,8 @@ export function ProfileHeader({
                   تعديل
                 </Link>
               </Button>
+            ) : user ? (
+              <FollowButton targetUserId={profile.id} />
             ) : null}
           </div>
         </div>
@@ -157,29 +208,45 @@ export function ProfileHeader({
             ) : null}
           </div>
 
-          <dl className="mt-4 flex gap-6 border-t border-border pt-3">
-            <div>
-              <dt className="text-xs text-muted-foreground">المنشورات</dt>
-              <dd className="mt-0.5 text-sm font-semibold tabular-nums">
-                {stats ? formatCount(stats.posts) : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">الإعجابات</dt>
-              <dd className="mt-0.5 text-sm font-semibold tabular-nums">
-                {stats ? formatCount(stats.likes) : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">التعليقات</dt>
-              <dd className="mt-0.5 text-sm font-semibold tabular-nums">
-                {stats ? formatCount(stats.comments) : '—'}
-              </dd>
-            </div>
-          </dl>
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-border pt-3">
+            {user ? (
+              <>
+                <StatButton
+                  label="المتابعون"
+                  value={formatCount(followers.length)}
+                  onClick={() => setList({ kind: 'followers', open: true })}
+                />
+                <StatButton
+                  label="يتابع"
+                  value={formatCount(following.length)}
+                  onClick={() => setList({ kind: 'following', open: true })}
+                />
+              </>
+            ) : null}
+            <Stat
+              label="المنشورات"
+              value={stats ? formatCount(stats.posts) : '—'}
+            />
+            <Stat
+              label="الإعجابات"
+              value={stats ? formatCount(stats.likes) : '—'}
+            />
+            <Stat
+              label="التعليقات"
+              value={stats ? formatCount(stats.comments) : '—'}
+            />
+          </div>
         </div>
       </div>
 
+      <FollowList
+        open={list?.open ?? false}
+        onOpenChange={(open) => {
+          if (!open) setList(null)
+        }}
+        userId={user ? profile.id : undefined}
+        kind={list?.kind ?? 'followers'}
+      />
       {preview ? (
         <ImagePreview
           open

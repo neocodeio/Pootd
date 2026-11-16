@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/hooks/use-auth'
 import { useCreateComment, useDeleteComment } from '@/hooks/use-mutations'
 import { useComments } from '@/hooks/use-pootd'
+import { useRealtimeComments } from '@/hooks/use-realtime'
 import { timeAgo } from '@/lib/format'
 import { flattenPages } from '@/lib/pagination'
 import type { CommentWithAuthor } from '@/lib/types'
@@ -31,6 +32,7 @@ export function CommentSection({
   const { user, profile } = useAuth()
   const { data, isLoading, error, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useComments(postId)
+  useRealtimeComments(postId)
   const createComment = useCreateComment(postId)
   const deleteComment = useDeleteComment(postId)
   const [content, setContent] = useState('')

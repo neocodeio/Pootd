@@ -20,9 +20,7 @@ const NOTIFICATION_PAGE_SIZE = 20
 
 function throwIfError(error: { message: string } | null): void {
   if (error) throw new Error(error.message)
-}
-
-/** PostgREST filters are happier with a timezone marker than with `+00:00`. */
+}/** PostgREST filters are happier with a timezone marker than with `+00:00`. */
 function toIso(value: string): string {
   return new Date(value).toISOString()
 }
@@ -393,6 +391,84 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     likes: Number(row?.likes ?? 0),
     comments: Number(row?.comments ?? 0),
   }
+}
+
+export async function getFollows(
+  userId: string,
+  kind: 'followers' | 'following',
+): Promise<Profile[]> {
+  const column = kind === 'followers' ? 'following_id' : 'follower_id'
+  const { data, error } = await supabase
+    .from('follows')
+    .select(kind === 'followers' ? 'follower_id' : 'following_id')
+    .eq(column, userId)
+    .order('created_at', { ascending: false })
+
+  throwIfError(error)
+
+  const ids = ((data ?? []) as { [key: string]: string | null }[])
+    .map((row) => (kind === 'followers' ? row.follower_id : row.following_id))
+    .filter((id): id is string => Boolean(id))
+
+  if (ids.length === 0) return []
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', ids)
+
+  throwIfError(profilesError)
+  return (profiles ?? []) as unknown as Profile[]
+}
+
+export async function getFollowState(
+  userId: string,
+  targetUserId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('follows')
+    .select('follower_id')
+    .eq('follower_id', userId)
+    .eq('following_id', targetUserId)
+    .maybeSingle()
+
+  throwIfError(error)
+  return Boolean(data)
+}
+
+export async function toggleFollow(
+  userId: string,
+  targetUserId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('follows')
+    .select('follower_id')
+    .eq('follower_id', userId)
+    .eq('following_id', targetUserId)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+
+  if (data) {
+    const { error: deleteError } = await supabase
+      .from('follows')
+      .delete()
+      .eq('follower_id', userId)
+      .eq('following_id', targetUserId)
+    throwIfError(deleteError)
+    return false
+  }
+
+  const { error: insertError } = await supabase.from('follows').insert({
+    follower_id: userId,
+    following_id: targetUserId,
+  })
+
+  if (insertError && insertError.code !== '23505') {
+    throw new Error(insertError.message)
+  }
+
+  return true
 }
 
 export async function getTrendingTags(limit = 8): Promise<TrendingTag[]> {

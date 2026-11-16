@@ -24,7 +24,7 @@ export interface ReportInput {
 
 export type ReportReason = 'spam' | 'harassment' | 'malicious_link' | 'other'
 
-export type NotificationType = 'like' | 'comment'
+export type NotificationType = 'like' | 'comment' | 'follow'
 
 export interface Notification {
   id: string
