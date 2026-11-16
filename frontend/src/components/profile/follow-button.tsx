@@ -1,4 +1,5 @@
-import { UserCheck, UserPlus } from 'lucide-react'
+import { UserAdd01Icon, UserCheck01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
 import { useFollowState } from '@/hooks/use-pootd'
@@ -21,7 +22,11 @@ export function FollowButton({ targetUserId }: { targetUserId: string }) {
       disabled={isPending || isLoading}
       onClick={() => void toggleFollow(targetUserId)}
     >
-      {isFollowing ? <UserCheck /> : <UserPlus />}
+      {isFollowing ? (
+        <HugeiconsIcon icon={UserCheck01Icon} />
+      ) : (
+        <HugeiconsIcon icon={UserAdd01Icon} />
+      )}
       {isFollowing ? 'إيقاف المتابعة' : 'متابعة'}
     </Button>
   )

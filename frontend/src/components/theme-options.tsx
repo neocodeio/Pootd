@@ -1,13 +1,14 @@
-import { Monitor, Moon, Sun } from 'lucide-react'
+import { ComputerIcon, Moon02Icon, Sun01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import type { ReactNode } from 'react'
 import { useTheme } from '@/hooks/use-theme'
 import type { ThemePreference } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
 
 const OPTIONS: { value: ThemePreference; label: string; icon: ReactNode }[] = [
-  { value: 'light', label: 'فاتح', icon: <Sun className="size-4" /> },
-  { value: 'dark', label: 'داكن', icon: <Moon className="size-4" /> },
-  { value: 'system', label: 'حسب النظام', icon: <Monitor className="size-4" /> },
+  { value: 'light', label: 'فاتح', icon: <HugeiconsIcon icon={Sun01Icon} className="size-4" /> },
+  { value: 'dark', label: 'داكن', icon: <HugeiconsIcon icon={Moon02Icon} className="size-4" /> },
+  { value: 'system', label: 'حسب النظام', icon: <HugeiconsIcon icon={ComputerIcon} className="size-4" /> },
 ]
 
 export function ThemeOptions() {

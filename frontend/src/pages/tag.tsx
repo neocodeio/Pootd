@@ -1,4 +1,5 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useParams } from 'react-router-dom'
 import { PostList } from '@/components/post/post-list'
 import { Button } from '@/components/ui/button'
@@ -23,7 +24,7 @@ export function TagPage() {
           to="/explore"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowRight className="size-4" />
+          <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
           استكشف
         </Link>
         <h1 dir="auto" className="mt-3 text-start font-heading text-2xl font-semibold tracking-tight">

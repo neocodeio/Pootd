@@ -1,4 +1,5 @@
-import { X } from 'lucide-react'
+import { Cancel01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
@@ -33,7 +34,7 @@ export function ImagePreview({
             className="absolute top-3 end-3 bg-background/90 text-foreground shadow-sm hover:bg-background"
             aria-label="إغلاق المعاينة"
           >
-            <X />
+            <HugeiconsIcon icon={Cancel01Icon} />
           </Button>
         </DialogClose>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, Send } from 'lucide-react'
+import { Loading03Icon, SentIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -129,7 +130,11 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
                 </span>
               </div>
               <Button type="submit" size="sm" className="rounded-full px-4" disabled={!canSubmit}>
-                {createPost.isPending ? <Loader2 className="animate-spin" /> : <Send />}
+                {createPost.isPending ? (
+                  <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                ) : (
+                  <HugeiconsIcon icon={SentIcon} />
+                )}
                 نشر
               </Button>
             </div>

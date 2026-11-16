@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loading03Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, Navigate } from 'react-router-dom'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { Button } from '@/components/ui/button'
@@ -105,7 +106,9 @@ export function ResetPage() {
           ) : null}
 
           <Button type="submit" disabled={pending} className="w-full">
-            {pending ? <Loader2 className="animate-spin" /> : null}
+            {pending ? (
+              <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+            ) : null}
             إرسال رابط الإعادة
           </Button>
         </form>

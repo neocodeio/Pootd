@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { EmptyState } from '@/components/empty-state'
 import { CommentSection } from '@/components/post/comment-section'
@@ -39,7 +40,7 @@ export function PostPage() {
           to="/"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowRight className="size-4" />
+          <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
           الرئيسية
         </Link>
       </header>

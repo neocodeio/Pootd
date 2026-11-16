@@ -1,10 +1,16 @@
 import { useState } from 'react'
-import { Flag, Loader2, Trash2 } from 'lucide-react'
+import {
+  Delete02Icon,
+  Flag01Icon,
+  Loading03Icon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ReportDialog } from '@/components/report-dialog'
 import { UserAvatar } from '@/components/user-avatar'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -16,6 +22,7 @@ import { useComments } from '@/hooks/use-pootd'
 import { useRealtimeComments } from '@/hooks/use-realtime'
 import { timeAgo } from '@/lib/format'
 import { flattenPages } from '@/lib/pagination'
+import { isVerified } from '@/lib/verified'
 import type { CommentWithAuthor } from '@/lib/types'
 
 const MAX_COMMENT_LENGTH = 1000
@@ -108,7 +115,9 @@ export function CommentSection({
                   {content.length}/{MAX_COMMENT_LENGTH}
                 </span>
                 <Button type="submit" size="sm" disabled={!canSubmit}>
-                  {createComment.isPending ? <Loader2 className="animate-spin" /> : null}
+                  {createComment.isPending ? (
+                    <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                  ) : null}
                   تعليق
                 </Button>
               </div>
@@ -173,6 +182,9 @@ export function CommentSection({
                       >
                         {comment.author.display_name}
                       </Link>
+                      {isVerified(comment.author.username) ? (
+                        <VerifiedBadge className="-ms-1 size-3.5 self-center" />
+                      ) : null}
                       <span dir="ltr" className="text-xs text-muted-foreground">
                         @{comment.author.username}
                       </span>
@@ -193,7 +205,7 @@ export function CommentSection({
                             aria-label="الإبلاغ عن التعليق"
                             className="text-muted-foreground/60 opacity-100 transition-colors hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
                           >
-                            <Flag className="size-3.5" />
+                            <HugeiconsIcon icon={Flag01Icon} className="size-3.5" />
                           </button>
                         ) : null}
                         {canDelete ? (
@@ -203,7 +215,7 @@ export function CommentSection({
                             aria-label="حذف التعليق"
                             className="text-muted-foreground/60 opacity-100 transition-colors hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
                           >
-                            <Trash2 className="size-3.5" />
+                            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
                           </button>
                         ) : null}
                       </span>
@@ -230,7 +242,9 @@ export function CommentSection({
                 disabled={isFetchingNextPage}
                 className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
               >
-                {isFetchingNextPage ? <Loader2 className="animate-spin" /> : null}
+                {isFetchingNextPage ? (
+                  <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                ) : null}
                 حمّل المزيد من التعليقات
               </Button>
             </div>

@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import {
-  ChevronLeft,
-  Flag,
-  Link2,
-  Loader2,
-  MessageSquare,
-  MoreHorizontal,
-  Pencil,
-  Save,
-  Trash2,
-  X,
-} from 'lucide-react'
+  Cancel01Icon,
+  ChevronLeftIcon,
+  Comment01Icon,
+  Delete02Icon,
+  Flag01Icon,
+  Link04Icon,
+  Loading03Icon,
+  MoreHorizontalIcon,
+  PencilEdit01Icon,
+  SaveIcon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -19,6 +20,7 @@ import { LikeButton } from '@/components/post/like-button'
 import { PostContent } from '@/components/post/post-content'
 import { ReportDialog } from '@/components/report-dialog'
 import { UserAvatar } from '@/components/user-avatar'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -34,6 +36,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useDeletePost, useUpdatePost } from '@/hooks/use-mutations'
 import { timeAgo } from '@/lib/format'
 import { extractTags } from '@/lib/validation'
+import { isVerified } from '@/lib/verified'
 import type { PostWithAuthor } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -150,7 +153,7 @@ export function PostCard({
                   onClick={cancelEditing}
                   disabled={updatePost.isPending}
                 >
-                  <X />
+                  <HugeiconsIcon icon={Cancel01Icon} />
                   إلغاء
                 </Button>
                 <Button
@@ -160,9 +163,9 @@ export function PostCard({
                   disabled={updatePost.isPending || !draftContent.trim()}
                 >
                   {updatePost.isPending ? (
-                    <Loader2 className="animate-spin" />
+                    <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
                   ) : (
-                    <Save />
+                    <HugeiconsIcon icon={SaveIcon} />
                   )}
                   حفظ
                 </Button>
@@ -200,6 +203,9 @@ export function PostCard({
               >
                 {post.author.display_name}
               </Link>
+              {isVerified(post.author.username) ? (
+                <VerifiedBadge className="-ms-1 self-center" />
+              ) : null}
               <Link
                 to={`/u/${post.author.username}`}
                 dir="ltr"
@@ -231,26 +237,26 @@ export function PostCard({
                   className="-me-1 shrink-0 rounded-full text-muted-foreground"
                   aria-label="خيارات المنشور"
                 >
-                  <MoreHorizontal />
+                  <HugeiconsIcon icon={MoreHorizontalIcon} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onSelect={() => void copyLink()}>
-                  <Link2 />
+                  <HugeiconsIcon icon={Link04Icon} />
                   نسخ الرابط
                 </DropdownMenuItem>
                 {isAuthor ? (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={startEditing}>
-                      <Pencil />
+                      <HugeiconsIcon icon={PencilEdit01Icon} />
                       تعديل المنشور
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       variant="destructive"
                       onSelect={() => setConfirmOpen(true)}
                     >
-                      <Trash2 />
+                      <HugeiconsIcon icon={Delete02Icon} />
                       حذف المنشور
                     </DropdownMenuItem>
                   </>
@@ -258,7 +264,7 @@ export function PostCard({
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => setReportOpen(true)}>
-                      <Flag />
+                      <HugeiconsIcon icon={Flag01Icon} />
                       الإبلاغ عن المنشور
                     </DropdownMenuItem>
                   </>
@@ -282,7 +288,7 @@ export function PostCard({
               className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               اقرأ المنشور كاملًا
-              <ChevronLeft className="size-3.5" />
+              <HugeiconsIcon icon={ChevronLeftIcon} className="size-3.5" />
             </Link>
           ) : null}
 
@@ -295,7 +301,7 @@ export function PostCard({
               className="gap-1.5 rounded-full px-2.5 text-xs text-muted-foreground hover:text-foreground"
             >
               <Link to={`/p/${post.id}#comments`} aria-label="عرض التعليقات">
-                <MessageSquare className="size-4" />
+                <HugeiconsIcon icon={Comment01Icon} className="size-4" />
                 <span className="tabular-nums">{post.comment_count}</span>
               </Link>
             </Button>
@@ -308,7 +314,7 @@ export function PostCard({
               aria-label="نسخ رابط المنشور"
               className="rounded-full text-muted-foreground hover:text-foreground"
             >
-              <Link2 className="size-4" />
+              <HugeiconsIcon icon={Link04Icon} className="size-4" />
             </Button>
           </div>
         </div>

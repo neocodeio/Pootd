@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { UserAvatar } from '@/components/user-avatar'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { useFollows } from '@/hooks/use-pootd'
+import { isVerified } from '@/lib/verified'
 
 export function FollowList({
   open,
@@ -58,8 +60,11 @@ export function FollowList({
                   className="size-9 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <p dir="auto" className="truncate text-sm font-semibold">
-                    {profile.display_name}
+                  <p dir="auto" className="flex min-w-0 items-center gap-1 text-sm font-semibold">
+                    <span className="truncate">{profile.display_name}</span>
+                    {isVerified(profile.username) ? (
+                      <VerifiedBadge className="size-3.5" />
+                    ) : null}
                   </p>
                   <p dir="ltr" className="truncate text-xs text-muted-foreground">
                     @{profile.username}

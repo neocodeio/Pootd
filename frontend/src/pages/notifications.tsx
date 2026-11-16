@@ -1,8 +1,10 @@
-import { ChevronLeft, Loader2 } from 'lucide-react'
+import { ChevronLeftIcon, Loading03Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/empty-state'
 import { UserAvatar } from '@/components/user-avatar'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,6 +15,7 @@ import {
 import { useNotifications, useUnreadNotificationCount } from '@/hooks/use-pootd'
 import { timeAgo } from '@/lib/format'
 import { flattenPages } from '@/lib/pagination'
+import { isVerified } from '@/lib/verified'
 
 export function NotificationsPage() {
   const notifications = useNotifications()
@@ -48,7 +51,9 @@ export function NotificationsPage() {
             disabled={markAllRead.isPending}
             className="rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
           >
-            {markAllRead.isPending ? <Loader2 className="animate-spin" /> : null}
+            {markAllRead.isPending ? (
+              <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+            ) : null}
             تعليم الكل كمقروء
           </Button>
         ) : null}
@@ -119,8 +124,11 @@ export function NotificationsPage() {
                   <UserAvatar profile={notification.actor} className="size-9" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm leading-7">
-                      <span dir="auto" className="font-semibold">
+                      <span dir="auto" className="inline-flex items-center gap-1 align-middle font-semibold">
                         {notification.actor.display_name}
+                        {isVerified(notification.actor.username) ? (
+                          <VerifiedBadge className="size-3.5" />
+                        ) : null}
                       </span>{' '}
                       <span className="text-muted-foreground">{text}</span>
                     </p>
@@ -140,7 +148,10 @@ export function NotificationsPage() {
                         className="size-2 rounded-full bg-foreground"
                       />
                     ) : null}
-                    <ChevronLeft className="size-4 text-muted-foreground/60" />
+                    <HugeiconsIcon
+                      icon={ChevronLeftIcon}
+                      className="size-4 text-muted-foreground/60"
+                    />
                   </span>
                 </Link>
               )
@@ -158,7 +169,7 @@ export function NotificationsPage() {
                 className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
               >
                 {notifications.isFetchingNextPage ? (
-                  <Loader2 className="animate-spin" />
+                  <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
                 ) : null}
                 حمّل المزيد
               </Button>

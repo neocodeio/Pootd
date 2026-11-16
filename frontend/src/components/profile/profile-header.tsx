@@ -1,15 +1,25 @@
 import { useState } from 'react'
-import { Calendar, Code2, Globe, Link2, Settings, ZoomIn } from 'lucide-react'
+import {
+  Calendar01Icon,
+  GithubIcon,
+  BriefcaseBusinessIcon,
+  Link04Icon,
+  Settings01Icon,
+  ZoomInIcon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ImagePreview } from '@/components/image-preview'
 import { FollowButton } from '@/components/profile/follow-button'
 import { FollowList } from '@/components/profile/follow-list'
 import { UserAvatar } from '@/components/user-avatar'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
 import { useFollows } from '@/hooks/use-pootd'
 import { formatCount, formatJoined, safeHostname } from '@/lib/format'
+import { isVerified } from '@/lib/verified'
 import type { Profile, ProfileStats } from '@/lib/types'
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -99,7 +109,7 @@ export function ProfileHeader({
           />
           <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
             <span className="rounded-full bg-black/50 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
-              <ZoomIn className="size-4" />
+              <HugeiconsIcon icon={ZoomInIcon} className="size-4" />
             </span>
           </span>
         </button>
@@ -130,7 +140,7 @@ export function ProfileHeader({
                 className="size-20 border-4 border-card bg-secondary sm:size-24"
               />
               <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-white opacity-0 transition-opacity group-hover:bg-black/25 group-hover:opacity-100">
-                <ZoomIn className="size-5" />
+                <HugeiconsIcon icon={ZoomInIcon} className="size-5" />
               </span>
             </button>
           ) : (
@@ -147,13 +157,13 @@ export function ProfileHeader({
               size="sm"
               onClick={() => void copyProfileLink()}
             >
-              <Link2 />
+              <HugeiconsIcon icon={Link04Icon} />
               مشاركة
             </Button>
             {isOwn ? (
               <Button asChild size="sm">
                 <Link to="/settings">
-                  <Settings />
+                  <HugeiconsIcon icon={Settings01Icon} />
                   تعديل
                 </Link>
               </Button>
@@ -164,8 +174,9 @@ export function ProfileHeader({
         </div>
 
         <div className="mt-3">
-          <h1 dir="auto" className="text-lg font-semibold tracking-tight">
+          <h1 dir="auto" className="flex flex-wrap items-center gap-1.5 text-lg font-semibold tracking-tight">
             {profile.display_name}
+            {isVerified(profile.username) ? <VerifiedBadge /> : null}
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             <span dir="ltr">@{profile.username}</span>
@@ -182,7 +193,7 @@ export function ProfileHeader({
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <Calendar className="size-3.5" />
+              <HugeiconsIcon icon={Calendar01Icon} className="size-3.5" />
               انضم في {formatJoined(profile.created_at)}
             </span>
             {profile.website ? (
@@ -192,7 +203,7 @@ export function ProfileHeader({
                 rel="noreferrer noopener"
                 className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
               >
-                <Globe className="size-3.5" />
+                <HugeiconsIcon icon={BriefcaseBusinessIcon} className="size-3.5" />
                 {safeHostname(profile.website)}
               </a>
             ) : null}
@@ -203,7 +214,7 @@ export function ProfileHeader({
                 rel="noreferrer noopener"
                 className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
               >
-                <Code2 className="size-3.5" />
+                <HugeiconsIcon icon={GithubIcon} className="size-3.5" />
                 {safeHostname(profile.github)}
               </a>
             ) : null}

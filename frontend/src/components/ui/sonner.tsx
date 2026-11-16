@@ -1,5 +1,12 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import {
+  Alert02Icon,
+  CheckmarkCircle02Icon,
+  InformationCircleIcon,
+  Loading03Icon,
+  OctagonXIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -8,19 +15,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       icons={{
         success: (
-          <CircleCheckIcon className="size-4" />
+          <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4" />
         ),
         info: (
-          <InfoIcon className="size-4" />
+          <HugeiconsIcon icon={InformationCircleIcon} className="size-4" />
         ),
         warning: (
-          <TriangleAlertIcon className="size-4" />
+          <HugeiconsIcon icon={Alert02Icon} className="size-4" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <HugeiconsIcon icon={OctagonXIcon} className="size-4" />
         ),
         loading: (
-          <Loader2Icon className="size-4 animate-spin" />
+          <HugeiconsIcon icon={Loading03Icon} className="size-4 animate-spin" />
         ),
       }}
       style={

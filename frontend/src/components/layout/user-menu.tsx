@@ -1,5 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { LogOut, Settings, UserRound } from 'lucide-react'
+import {
+  Logout01Icon,
+  Settings01Icon,
+  UserIcon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { UserAvatar } from '@/components/user-avatar'
@@ -76,13 +81,13 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="rounded-md px-2 py-2">
           <Link to={profilePath}>
-            <UserRound />
+            <HugeiconsIcon icon={UserIcon} />
             ملفي الشخصي
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="rounded-md px-2 py-2">
           <Link to="/settings">
-            <Settings />
+            <HugeiconsIcon icon={Settings01Icon} />
             الإعدادات
           </Link>
         </DropdownMenuItem>
@@ -92,7 +97,7 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
           className="rounded-md px-2 py-2"
           onSelect={() => void handleSignOut()}
         >
-          <LogOut />
+          <HugeiconsIcon icon={Logout01Icon} />
           تسجيل الخروج
         </DropdownMenuItem>
       </DropdownMenuContent>

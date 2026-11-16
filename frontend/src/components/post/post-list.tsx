@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loading03Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { EmptyState } from '@/components/empty-state'
 import { PostCard } from '@/components/post/post-card'
 import { Button } from '@/components/ui/button'
@@ -110,7 +111,9 @@ export function PostList({
             disabled={isLoadingMore}
             className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
           >
-            {isLoadingMore ? <Loader2 className="animate-spin" /> : null}
+            {isLoadingMore ? (
+              <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+            ) : null}
             حمّل المزيد
           </Button>
         </div>

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Loader2, Search } from 'lucide-react'
+import { Loading03Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/empty-state'
 import { PostList } from '@/components/post/post-list'
 import { UserAvatar } from '@/components/user-avatar'
+import { VerifiedBadge } from '@/components/verified-badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,6 +18,7 @@ import {
   useSearchProfiles,
 } from '@/hooks/use-pootd'
 import { sanitizeSearchTerm } from '@/lib/validation'
+import { isVerified } from '@/lib/verified'
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -72,7 +75,10 @@ export function SearchPage() {
           ابحث
         </Label>
         <div className="relative">
-          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
           <Input
             id="search-input"
             value={value}
@@ -83,7 +89,10 @@ export function SearchPage() {
             className="ps-9 pe-9"
           />
           {postsQuery.isFetching || profilesQuery.isFetching ? (
-            <Loader2 className="absolute end-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            <HugeiconsIcon
+              icon={Loading03Icon}
+              className="absolute end-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+            />
           ) : null}
         </div>
       </div>
@@ -105,13 +114,18 @@ export function SearchPage() {
                   <UserAvatar profile={profile} className="size-10" />
                 </Link>
                 <div className="min-w-0">
-                  <Link
-                    to={`/u/${profile.username}`}
-                    dir="auto"
-                    className="block truncate text-sm font-semibold transition-colors hover:underline"
-                  >
-                    {profile.display_name}
-                  </Link>
+                  <div className="flex min-w-0 items-center gap-1">
+                    <Link
+                      to={`/u/${profile.username}`}
+                      dir="auto"
+                      className="truncate text-sm font-semibold transition-colors hover:underline"
+                    >
+                      {profile.display_name}
+                    </Link>
+                    {isVerified(profile.username) ? (
+                      <VerifiedBadge className="size-3.5" />
+                    ) : null}
+                  </div>
                   <span dir="ltr" className="block truncate text-xs text-muted-foreground">
                     @{profile.username}
                   </span>

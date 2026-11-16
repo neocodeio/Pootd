@@ -1,4 +1,5 @@
-import { Bookmark } from 'lucide-react'
+import { Bookmark01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -43,7 +44,10 @@ export function BookmarkButton({
         bookmarked && 'text-foreground',
       )}
     >
-      <Bookmark className={cn('size-4', bookmarked && 'fill-current')} />
+      <HugeiconsIcon
+        icon={Bookmark01Icon}
+        className={cn('size-4', bookmarked && 'fill-current')}
+      />
     </Button>
   )
 }

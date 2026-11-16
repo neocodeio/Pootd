@@ -1,4 +1,5 @@
-import { Heart } from 'lucide-react'
+import { FavouriteIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -45,7 +46,8 @@ export function LikeButton({
         liked && 'hover:text-muted-foreground',
       )}
     >
-      <Heart
+      <HugeiconsIcon
+        icon={FavouriteIcon}
         className={cn('size-4', liked && 'fill-like text-like')}
         aria-hidden="true"
       />

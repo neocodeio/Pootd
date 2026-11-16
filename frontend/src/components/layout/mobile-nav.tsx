@@ -1,4 +1,11 @@
-import { Compass, Home, LogIn, Plus, UserRound } from 'lucide-react'
+import {
+  DiscoverCircleIcon,
+  Home03Icon,
+  Login01Icon,
+  PlusSignIcon,
+  UserIcon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { NavLink } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/hooks/use-auth'
@@ -43,10 +50,10 @@ export function MobileNav() {
       aria-label="التنقل السفلي"
     >
       <div className="mx-auto grid max-w-md grid-cols-4">
-        <MobileNavLink to="/" end icon={<Home className="size-5" />}>
+        <MobileNavLink to="/" end icon={<HugeiconsIcon icon={Home03Icon} className="size-5" />}>
           الرئيسية
         </MobileNavLink>
-        <MobileNavLink to="/explore" icon={<Compass className="size-5" />}>
+        <MobileNavLink to="/explore" icon={<HugeiconsIcon icon={DiscoverCircleIcon} className="size-5" />}>
           استكشف
         </MobileNavLink>
         <NavLink
@@ -54,7 +61,7 @@ export function MobileNav() {
           className="flex flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium text-foreground"
         >
           <span className="flex size-9 items-center justify-center rounded-lg bg-foreground text-background">
-            <Plus className="size-5" />
+            <HugeiconsIcon icon={PlusSignIcon} className="size-5" />
           </span>
           <span>أنشئ</span>
         </NavLink>
@@ -66,12 +73,12 @@ export function MobileNav() {
         ) : user ? (
           <MobileNavLink
             to={profile ? `/u/${profile.username}` : '/settings'}
-            icon={<UserRound className="size-5" />}
+            icon={<HugeiconsIcon icon={UserIcon} className="size-5" />}
           >
             حسابي
           </MobileNavLink>
         ) : (
-          <MobileNavLink to="/login" icon={<LogIn className="size-5" />}>
+          <MobileNavLink to="/login" icon={<HugeiconsIcon icon={Login01Icon} className="size-5" />}>
             دخول
           </MobileNavLink>
         )}

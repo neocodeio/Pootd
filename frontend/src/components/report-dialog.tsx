@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loading03Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -131,7 +132,9 @@ export function ReportDialog({
             onClick={submit}
             disabled={createReport.isPending}
           >
-            {createReport.isPending ? <Loader2 className="animate-spin" /> : null}
+            {createReport.isPending ? (
+              <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+            ) : null}
             إرسال البلاغ
           </Button>
         </DialogFooter>

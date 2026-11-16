@@ -128,23 +128,14 @@ export function ProfilePage() {
       <ProfileHeader profile={profile} stats={statsQuery.data} isOwn={isOwn} />
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as ProfileTab)}>
-        <TabsList
-          variant="line"
-          className="h-auto w-full justify-start gap-5 border-b border-border"
-        >
-          <TabsTrigger
-            value="posts"
-            className="h-auto flex-none rounded-none px-0 pb-2.5 pt-1 text-sm after:bottom-[-1px]"
-          >
+        <TabsList className="w-fit">
+          <TabsTrigger value="posts" className="px-3.5">
             المنشورات
             <span className="text-xs tabular-nums text-muted-foreground">
               {statsQuery.data ? formatCount(statsQuery.data.posts) : '—'}
             </span>
           </TabsTrigger>
-          <TabsTrigger
-            value="likes"
-            className="h-auto flex-none rounded-none px-0 pb-2.5 pt-1 text-sm after:bottom-[-1px]"
-          >
+          <TabsTrigger value="likes" className="px-3.5">
             الإعجابات
             <span className="text-xs tabular-nums text-muted-foreground">
               {likedCountQuery.data !== undefined
@@ -153,10 +144,7 @@ export function ProfilePage() {
             </span>
           </TabsTrigger>
           {isOwn ? (
-            <TabsTrigger
-              value="saved"
-              className="h-auto flex-none rounded-none px-0 pb-2.5 pt-1 text-sm after:bottom-[-1px]"
-            >
+            <TabsTrigger value="saved" className="px-3.5">
               المحفوظات
               <span className="text-xs tabular-nums text-muted-foreground">
                 {savedCountQuery.data !== undefined

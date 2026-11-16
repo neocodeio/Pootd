@@ -72,7 +72,7 @@ not "fix" them back without asking:
 | Header end group (right) | brand lockup → nav (الرئيسية / استكشف / ملفي) |
 | Header nav | `gap-1`; items `h-9 rounded-full px-3.5 py-2 gap-2 text-sm font-medium`, icon `size-4`; active item `bg-secondary` |
 | Brand lockup | wordmark `h-7` (`120×28`) + tagline `مجتمع الأمن السيبراني` at `text-[11px]` with `mt-1`, aligned to the end edge |
-| Create button | `h-10 rounded-full px-5`, primary fill, `PenLine` icon + "أنشئ منشور" |
+| Create button | `h-10 rounded-full px-5`, primary fill, `PencilEdit02Icon` + "أنشئ منشور" |
 | Feed column | `max-w-2xl` centred, `px-4 sm:px-6`, vertical rhythm `space-y-4` |
 | Page header | subtitle `text-sm` on the start (right) edge (title is screen-reader only — see overrides); segmented tabs on the end (left) edge |
 | Segmented tabs | track `h-8 rounded-full p-[3px] bg-secondary/60`; trigger `rounded-full px-3.5 text-sm`, active `bg-secondary shadow-sm` |
@@ -119,7 +119,7 @@ Rules that must hold:
   on submit the tags are parsed from the content.
 - Footer row: `mt-3 border-t border-border pt-3`; the counter `0/4000` on the
   start edge (the keyboard hint stays hidden — see overrides); the
-  `rounded-full px-4` "نشر" pill with the `Send` icon on the end (left) edge.
+  `rounded-full px-4` "نشر" pill with the `SentIcon` on the end (left) edge.
 - Submit with `Ctrl/⌘ + Enter` as well as the button; the button is disabled
   while the textarea is empty or a post is in flight.
 
@@ -149,6 +149,33 @@ a single field:
 - Headings use `font-heading`; the feed title is `text-2xl font-bold
   tracking-tight`.
 
+## Icons
+
+Every icon in the product is a **Hugeicons** icon — `lucide-react` is gone and
+must not come back. Data lives in `@hugeicons/core-free-icons` (v4) and is
+rendered by `HugeiconsIcon` from `@hugeicons/react`:
+
+```tsx
+import { FavouriteIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
+
+<HugeiconsIcon icon={FavouriteIcon} className="size-4" />
+```
+
+- Import the icon data and `HugeiconsIcon` per file; there is no local wrapper.
+  `components.json` declares `"iconLibrary": "hugeicons"` for new shadcn pulls.
+- Size with the same Tailwind classes as before (`size-4`, `size-5`,
+  `size-3.5`). Inside `Button`/`DropdownMenuItem` a bare icon is sized by the
+  existing `[&_svg:not([class*='size-'])]:size-4` rule, so no class is needed.
+- Keep Hugeicons' native `1.5` stroke for UI icons. Only the verified badge
+  overrides it (`strokeWidth={2}` on `CheckmarkBadge02Icon`).
+- Use the semantic name that matches the intent, not the closest glyph:
+  `FavouriteIcon` (heart), `Comment01Icon` (comments), `Bookmark01Icon`,
+  `Link04Icon` (copy link), `SentIcon` (publish), `PencilEdit02Icon` (create),
+  `Cancel01Icon` (close/x), `Loading03Icon` (`animate-spin` for pending).
+- Toasts (`components/ui/sonner.tsx`) use `CheckmarkCircle02Icon`,
+  `InformationCircleIcon`, `Alert02Icon`, `OctagonXIcon`, `Loading03Icon`.
+
 ## Colour tokens
 
 Never hard-code colours. Use the semantic tokens in `src/index.css`:
@@ -160,6 +187,17 @@ both. `--like` is the heart accent: `oklch(0.58 0.22 25)` light,
 `oklch(0.70 0.19 25)` dark. `--tag` is the hashtag accent:
 `oklch(0.52 0.16 255)` light, `oklch(0.74 0.12 255)` dark. Those two are the
 only colours in the product.
+
+## Verified badge
+
+The badge (`components/verified-badge.tsx`) is the `CheckmarkBadge02Icon`
+Hugeicons seal rendered in `--tag` blue (`text-tag`) — no circle behind it, the
+glyph *is* the badge. Default `size-4` next to the profile name, `size-3.5` in
+lists/search/notifications, `strokeWidth={2}` so it holds up at 16px, labelled
+`حساب موثّق` for screen readers. It renders beside the display name on the
+profile header, post cards, comments, follower/following lists, search results
+and notifications. Verified accounts live in `frontend/src/lib/verified.ts`
+(currently `amin`); add a username there to verify that account.
 
 ## Radii
 
@@ -175,7 +213,7 @@ only colours in the product.
   bios); `dir="ltr"` on Latin-only strings (usernames, tags, emails, URLs).
 - Use logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`), never
   left/right.
-- Chevron icons point the way the reader travels: `ChevronLeft` for "more" in
+- Chevron icons point the way the reader travels: `ChevronLeftIcon` for "more" in
   RTL.
 
 ## Logo

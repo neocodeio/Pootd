@@ -1,5 +1,11 @@
 import { Suspense } from 'react'
-import { Compass, Home, PenLine, UserRound } from 'lucide-react'
+import {
+  DiscoverCircleIcon,
+  Home03Icon,
+  PencilEdit02Icon,
+  UserIcon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Brand } from '@/components/brand'
 import { MobileNav } from '@/components/layout/mobile-nav'
@@ -54,16 +60,16 @@ function DesktopHeader() {
         <div className="flex items-center gap-7">
           <Brand />
           <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي"> {/**DON'T CHANGE IT */}
-            <HeaderLink to="/" end icon={<Home className="size-4" />}>
+            <HeaderLink to="/" end icon={<HugeiconsIcon icon={Home03Icon} className="size-4" />}>
               الرئيسية
             </HeaderLink>
-            <HeaderLink to="/explore" icon={<Compass className="size-4" />}>
+            <HeaderLink to="/explore" icon={<HugeiconsIcon icon={DiscoverCircleIcon} className="size-4" />}>
               استكشف
             </HeaderLink>
             {user && profile ? (
               <HeaderLink
                 to={`/u/${profile.username}`}
-                icon={<UserRound className="size-4" />}
+                icon={<HugeiconsIcon icon={UserIcon} className="size-4" />}
               >
                 ملفي
               </HeaderLink>
@@ -83,7 +89,7 @@ function DesktopHeader() {
             <>
               <Button asChild size="sm" className="h-10 rounded-full px-5">
                 <Link to="/#compose">
-                  <PenLine />
+                  <HugeiconsIcon icon={PencilEdit02Icon} />
                   أنشئ منشور
                 </Link>
               </Button>

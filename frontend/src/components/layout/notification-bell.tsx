@@ -1,4 +1,5 @@
-import { Bell } from 'lucide-react'
+import { Notification01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
@@ -23,7 +24,7 @@ export function NotificationBell({ className }: { className?: string }) {
       className={cn('relative text-muted-foreground hover:text-foreground', className)}
     >
       <Link to="/notifications" aria-label={label} title={label}>
-        <Bell className="size-4" />
+        <HugeiconsIcon icon={Notification01Icon} className="size-4" />
         {count > 0 ? (
           <span
             aria-hidden="true"

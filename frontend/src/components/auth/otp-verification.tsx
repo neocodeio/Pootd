@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Loader2, ShieldCheck } from 'lucide-react'
+import { Loading03Icon, ShieldCheckIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { OtpInput } from '@/components/auth/otp-input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -102,7 +103,7 @@ export function OtpVerification({
     <div>
       <div className="mb-6">
         <div className="mb-4 flex size-11 items-center justify-center rounded-2xl bg-secondary">
-          <ShieldCheck className="size-5" />
+          <HugeiconsIcon icon={ShieldCheckIcon} className="size-5" />
         </div>
         <h1 className="font-heading text-xl font-semibold tracking-tight">أكّد بريدك.</h1>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
@@ -151,7 +152,9 @@ export function OtpVerification({
         ) : null}
 
         <Button type="submit" disabled={pending || code.length !== 4} className="w-full">
-          {pending ? <Loader2 className="animate-spin" /> : null}
+          {pending ? (
+            <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+          ) : null}
           تحقق من الرمز
         </Button>
 
@@ -162,7 +165,9 @@ export function OtpVerification({
           disabled={resending || resendIn > 0}
           className="w-full"
         >
-          {resending ? <Loader2 className="animate-spin" /> : null}
+          {resending ? (
+            <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+          ) : null}
           {resendIn > 0 ? `إعادة الإرسال بعد ${resendIn} ثانية` : 'إعادة إرسال الرمز'}
         </Button>
       </form>

@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Image, KeyRound, Loader2, LogOut, Mail, Trash } from 'lucide-react'
+import {
+  ArrowRight01Icon,
+  Delete02Icon,
+  Image01Icon,
+  Key01Icon,
+  Loading03Icon,
+  Logout01Icon,
+  Mail01Icon,
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -278,7 +287,7 @@ export function SettingsPage() {
           to={`/u/${profile.username}`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowRight className="size-4" />
+          <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
           العودة للملف
         </Link>
         <h1 className="mt-3 font-heading text-xl font-semibold tracking-tight">الإعدادات</h1>
@@ -323,7 +332,11 @@ export function SettingsPage() {
                   onClick={() => coverInputRef.current?.click()}
                   disabled={updateCover.isPending}
                 >
-                  {updateCover.isPending ? <Loader2 className="animate-spin" /> : <Image />}
+                  {updateCover.isPending ? (
+                    <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                  ) : (
+                    <HugeiconsIcon icon={Image01Icon} />
+                  )}
                   {profile.cover_image_url ? 'تغيير الغلاف' : 'إضافة غلاف'}
                 </Button>
                 {profile.cover_image_url ? (
@@ -334,7 +347,11 @@ export function SettingsPage() {
                     onClick={handleRemoveCover}
                     disabled={removeCover.isPending}
                   >
-                    {removeCover.isPending ? <Loader2 className="animate-spin" /> : <Trash />}
+                    {removeCover.isPending ? (
+                      <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                    ) : (
+                      <HugeiconsIcon icon={Delete02Icon} />
+                    )}
                     إزالة الغلاف
                   </Button>
                 ) : null}
@@ -368,7 +385,10 @@ export function SettingsPage() {
                 )}
                 {updateAvatar.isPending ? (
                   <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
-                    <Loader2 className="size-4 animate-spin" />
+                    <HugeiconsIcon
+                      icon={Loading03Icon}
+                      className="size-4 animate-spin"
+                    />
                   </span>
                 ) : null}
               </div>
@@ -500,7 +520,9 @@ export function SettingsPage() {
                 <Link to={`/u/${profile.username}`}>عرض الملف</Link>
               </Button>
               <Button type="submit" size="sm" disabled={updateProfile.isPending}>
-                {updateProfile.isPending ? <Loader2 className="animate-spin" /> : null}
+                {updateProfile.isPending ? (
+                  <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                ) : null}
                 حفظ التغييرات
               </Button>
             </div>
@@ -535,7 +557,7 @@ export function SettingsPage() {
                 size="sm"
                 onClick={() => void handleSignOut()}
               >
-                <LogOut />
+                <HugeiconsIcon icon={Logout01Icon} />
                 تسجيل الخروج
               </Button>
             </div>
@@ -569,7 +591,11 @@ export function SettingsPage() {
                   size="sm"
                   disabled={emailPending || !newEmail.trim()}
                 >
-                  {emailPending ? <Loader2 className="animate-spin" /> : <Mail />}
+                  {emailPending ? (
+                    <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                  ) : (
+                    <HugeiconsIcon icon={Mail01Icon} />
+                  )}
                   إرسال رابط التأكيد
                 </Button>
               </div>
@@ -591,7 +617,11 @@ export function SettingsPage() {
                 disabled={resetPending || !user?.email}
                 className="mt-3"
               >
-                {resetPending ? <Loader2 className="animate-spin" /> : <KeyRound />}
+                {resetPending ? (
+                  <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                ) : (
+                  <HugeiconsIcon icon={Key01Icon} />
+                )}
                 إرسال رابط إعادة التعيين
               </Button>
             </div>
@@ -612,7 +642,7 @@ export function SettingsPage() {
                 }}
                 className="mt-3"
               >
-                <Trash />
+                <HugeiconsIcon icon={Delete02Icon} />
                 حذف الحساب
               </Button>
             </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Loading03Icon, ViewIcon, ViewOffIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AuthLayout } from '@/components/auth/auth-layout'
@@ -204,7 +205,11 @@ export function SignupPage() {
               className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
             >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              {showPassword ? (
+                <HugeiconsIcon icon={ViewOffIcon} className="size-4" />
+              ) : (
+                <HugeiconsIcon icon={ViewIcon} className="size-4" />
+              )}
             </button>
           </div>
         </div>
@@ -219,7 +224,9 @@ export function SignupPage() {
         ) : null}
 
         <Button type="submit" disabled={pending} className="w-full">
-          {pending ? <Loader2 className="animate-spin" /> : null}
+          {pending ? (
+            <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+          ) : null}
           إنشاء حساب
         </Button>
 

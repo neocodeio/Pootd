@@ -1,4 +1,5 @@
-import { Moon, Sun } from 'lucide-react'
+import { Moon02Icon, Sun01Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
@@ -17,7 +18,11 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={label}
       title={label}
     >
-      {resolvedTheme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {resolvedTheme === 'dark' ? (
+        <HugeiconsIcon icon={Sun01Icon} className="size-4" />
+      ) : (
+        <HugeiconsIcon icon={Moon02Icon} className="size-4" />
+      )}
     </Button>
   )
 }
