@@ -37,7 +37,8 @@ function StatButton({
       type="button"
       onClick={onClick}
       aria-haspopup="dialog"
-      className="group rounded-lg text-start outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      aria-label={`عرض ${label}`}
+      className="group -mx-2 -my-1.5 rounded-lg px-2 py-1.5 text-start outline-none transition-colors hover:bg-secondary/60 focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <span className="block text-xs text-muted-foreground transition-colors group-hover:text-foreground">
         {label}
