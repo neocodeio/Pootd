@@ -12,6 +12,7 @@ import '@fontsource/ibm-plex-sans-arabic/arabic-600.css'
 import '@fontsource/ibm-plex-sans-arabic/arabic-700.css'
 import './index.css'
 import App from './App'
+import { ErrorBoundary } from './components/error-boundary'
 import { ThemeProvider } from './hooks/use-theme'
 
 const queryClient = new QueryClient({
@@ -28,7 +29,9 @@ createRoot(document.getElementById('root')!).render(
     <Direction.DirectionProvider dir="rtl">
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </ThemeProvider>
       </QueryClientProvider>
     </Direction.DirectionProvider>

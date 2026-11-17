@@ -125,11 +125,19 @@ export function useProfileStats(userId: string | undefined) {
   })
 }
 
-export function useFollows(userId: string | undefined, kind: 'followers' | 'following') {
-  return useQuery({
+export function useFollows(
+  userId: string | undefined,
+  kind: 'followers' | 'following',
+  enabled = true,
+) {
+  return useInfiniteQuery({
     queryKey: queryKeys.follows(userId ?? '', kind),
-    queryFn: () => getFollows(userId ?? '', kind),
-    enabled: Boolean(userId),
+    queryFn: ({ pageParam }) => getFollows(userId ?? '', kind, { cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    // The list is only fetched when its dialog opens; profile counts come from
+    // the profile row.
+    enabled: Boolean(userId) && enabled,
     staleTime: 30_000,
   })
 }
@@ -152,9 +160,11 @@ export function useTrendingTags() {
 }
 
 export function useSearchPosts(query: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.searchPosts(query),
-    queryFn: () => searchPosts(query, 20),
+    queryFn: ({ pageParam }) => searchPosts(query, { cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: query.trim().length >= 2,
     staleTime: 30_000,
   })

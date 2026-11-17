@@ -1,9 +1,13 @@
+import { Loading03Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { UserAvatar } from '@/components/user-avatar'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { useFollows } from '@/hooks/use-pootd'
+import { flattenPages } from '@/lib/pagination'
 import { isVerified } from '@/lib/verified'
 
 export function FollowList({
@@ -17,7 +21,18 @@ export function FollowList({
   userId: string | undefined
   kind: 'followers' | 'following'
 }) {
-  const { data: users, isLoading } = useFollows(userId, kind)
+  // Fetching is deferred until the dialog opens, so a profile view never
+  // downloads the social graph just to show its counters.
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useFollows(userId, kind, open)
+  const users = flattenPages(data) ?? []
   const isFollowers = kind === 'followers'
   const title = isFollowers ? 'المتابعون' : 'يتابع'
 
@@ -41,13 +56,26 @@ export function FollowList({
               </div>
             ))}
           </div>
-        ) : (users ?? []).length === 0 ? (
+        ) : error ? (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <p className="text-sm text-muted-foreground">تعذّر تحميل القائمة.</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={() => void refetch()}
+            >
+              حاول مرة ثانية
+            </Button>
+          </div>
+        ) : users.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             {isFollowers ? 'لا يتبع أحد بعد.' : 'لا يتبع أحدًا بعد.'}
           </p>
         ) : (
           <div className="space-y-1">
-            {(users ?? []).map((profile) => (
+            {users.map((profile) => (
               <Link
                 key={profile.id}
                 to={`/u/${profile.username}`}
@@ -72,6 +100,24 @@ export function FollowList({
                 </div>
               </Link>
             ))}
+
+            {hasNextPage ? (
+              <div className="flex justify-center pt-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {isFetchingNextPage ? (
+                    <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
+                  ) : null}
+                  عرض المزيد
+                </Button>
+              </div>
+            ) : null}
           </div>
         )}
       </DialogContent>

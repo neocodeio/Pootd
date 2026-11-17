@@ -31,7 +31,7 @@ export function TrendingTags() {
   if (!data || data.length === 0) {
     return (
       <p className="mt-3 text-sm text-muted-foreground">
-        ما فيه وسوم بعد. تظهر هنا مع بداية نشر المجتمع.
+        ما فيه وسوم رائجة بعد. الوسم يصير رائج لما يتكرر في منشورين أو أكثر.
       </p>
     )
   }

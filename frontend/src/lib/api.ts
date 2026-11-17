@@ -12,7 +12,7 @@ import type {
   SortOption,
   TrendingTag,
 } from './types'
-import { normalizeTag, normalizeUsername, sanitizeSearchTerm } from './validation'
+import { normalizeSearchTerm, normalizeTag, normalizeUsername } from './validation'
 
 const PAGE_SIZE = 20
 const COMMENT_PAGE_SIZE = 30
@@ -279,29 +279,54 @@ export async function updatePost(
   return data as unknown as PostWithAuthor
 }
 
-export async function searchPosts(query: string, limit = 20): Promise<PostWithAuthor[]> {
-  const term = sanitizeSearchTerm(query)
-  if (term.length < 2) return []
+export async function searchPosts(
+  query: string,
+  options: { limit?: number; cursor?: Cursor | null } = {},
+): Promise<Page<PostWithAuthor>> {
+  const term = normalizeSearchTerm(query)
+  if (term.length < 2) return { items: [], nextCursor: null }
 
-  const { data, error } = await supabase
+  const limit = options.limit ?? PAGE_SIZE
+  const cursor = options.cursor ?? null
+  const matches = [`search_text.ilike.%${term}%`, `tags.cs.{${term}}`]
+
+  let queryBuilder = supabase
     .from('posts')
     .select('*, author:profiles!posts_author_id_fkey(*)')
-    .or(`content.ilike.%${term}%,tags.cs.{${term}}`)
+    .limit(limit + 1)
+
+  if (cursor) {
+    const at = toIso(cursor.created_at)
+    // A single flat OR that combines each match with the cursor. Calling
+    // `.or()` twice would send two `or` params and AND them at the top level.
+    queryBuilder = queryBuilder.or(
+      matches
+        .flatMap((match) => [
+          `and(${match},created_at.lt.${at})`,
+          `and(${match},created_at.eq.${at},id.lt.${cursor.id})`,
+        ])
+        .join(','),
+    )
+  } else {
+    queryBuilder = queryBuilder.or(matches.join(','))
+  }
+
+  const { data, error } = await queryBuilder
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .order('id', { ascending: false })
 
   throwIfError(error)
-  return (data ?? []) as unknown as PostWithAuthor[]
+  return toPage((data ?? []) as unknown as PostWithAuthor[], limit, cursorOf)
 }
 
 export async function searchProfiles(query: string, limit = 12): Promise<Profile[]> {
-  const term = sanitizeSearchTerm(query)
+  const term = normalizeSearchTerm(query)
   if (term.length < 2) return []
 
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .or(`username.ilike.%${term}%,display_name.ilike.%${term}%`)
+    .ilike('search_text', `%${term}%`)
     .order('created_at', { ascending: false })
     .limit(limit)
 
@@ -396,29 +421,61 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
 export async function getFollows(
   userId: string,
   kind: 'followers' | 'following',
-): Promise<Profile[]> {
-  const column = kind === 'followers' ? 'following_id' : 'follower_id'
-  const { data, error } = await supabase
+  options: { limit?: number; cursor?: Cursor | null } = {},
+): Promise<Page<Profile>> {
+  const limit = options.limit ?? 30
+  const cursor = options.cursor ?? null
+  const isFollowers = kind === 'followers'
+  // "Who follows X" filters the graph on `following_id`; the profile on the
+  // other side of that edge is the follower. "Who X follows" is the reverse.
+  const filterColumn = isFollowers ? 'following_id' : 'follower_id'
+  const edgeColumn = isFollowers ? 'follower_id' : 'following_id'
+  const relation = isFollowers
+    ? 'profile:profiles!follows_follower_id_fkey(*)'
+    : 'profile:profiles!follows_following_id_fkey(*)'
+
+  let query = supabase
     .from('follows')
-    .select(kind === 'followers' ? 'follower_id' : 'following_id')
-    .eq(column, userId)
+    .select(`created_at, ${edgeColumn}, ${relation}`)
+    .eq(filterColumn, userId)
+    .limit(limit + 1)
+
+  if (cursor) {
+    const at = toIso(cursor.created_at)
+    query = query.or(
+      `created_at.lt.${at},and(created_at.eq.${at},${edgeColumn}.lt.${cursor.id})`,
+    )
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
+    .order(edgeColumn, { ascending: false })
 
   throwIfError(error)
 
-  const ids = ((data ?? []) as { [key: string]: string | null }[])
-    .map((row) => (kind === 'followers' ? row.follower_id : row.following_id))
-    .filter((id): id is string => Boolean(id))
+  const rows = (data ?? []) as unknown as {
+    created_at: string
+    follower_id?: string
+    following_id?: string
+    profile: Profile | null
+  }[]
+  const page = rows.slice(0, limit)
+  const last = page[page.length - 1]
+  const lastEdgeId = last
+    ? isFollowers
+      ? last.follower_id
+      : last.following_id
+    : undefined
 
-  if (ids.length === 0) return []
-
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('*')
-    .in('id', ids)
-
-  throwIfError(profilesError)
-  return (profiles ?? []) as unknown as Profile[]
+  return {
+    items: page
+      .map((row) => row.profile)
+      .filter((profile): profile is Profile => Boolean(profile)),
+    nextCursor:
+      rows.length > limit && last && lastEdgeId
+        ? { created_at: last.created_at, id: lastEdgeId }
+        : null,
+  }
 }
 
 export async function getFollowState(

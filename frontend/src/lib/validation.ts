@@ -70,3 +70,30 @@ export function sanitizeSearchTerm(input: string): string {
     .slice(0, SEARCH_TERM_MAX_LENGTH)
     .trim()
 }
+
+/**
+ * Folds Arabic spelling variants into one form so search matches what people
+ * actually type: hamza seats, alef maqsura and taa marbuta are unified, and
+ * tashkeel / tatweel are dropped.
+ *
+ * This must stay in sync with `public.normalize_arabic` in
+ * `backend/supabase/migrations/0013_arabic_search.sql`: the query is compared
+ * against a generated column folded by that function.
+ */
+export function normalizeArabic(input: string): string {
+  return input
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** The exact string that goes into `search_text` comparisons. */
+export function normalizeSearchTerm(input: string): string {
+  return normalizeArabic(sanitizeSearchTerm(input))
+}

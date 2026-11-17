@@ -130,10 +130,13 @@ export function useToggleFollow() {
     mutationFn: (targetUserId: string) => toggleFollow(user?.id ?? '', targetUserId),
     // The open profile's follower/following numbers live under the target's
     // key, so the whole `follows` prefix is invalidated — not just the
-    // viewer's own lists. `onSettled` also repairs the state after a failure.
+    // viewer's own lists. The counters themselves sit on the profile row, so
+    // `profile` is refreshed too. `onSettled` also repairs state after a
+    // failure.
     onSettled: () => {
       if (!user) return
       queryClient.invalidateQueries({ queryKey: ['follows'] })
+      queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
   })
 }

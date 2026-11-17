@@ -17,7 +17,6 @@ import { UserAvatar } from '@/components/user-avatar'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
-import { useFollows } from '@/hooks/use-pootd'
 import { formatCount, formatJoined, safeHostname } from '@/lib/format'
 import { isVerified } from '@/lib/verified'
 import type { Profile, ProfileStats } from '@/lib/types'
@@ -71,13 +70,12 @@ export function ProfileHeader({
 }) {
   const [preview, setPreview] = useState<{ src: string; alt: string } | null>(null)
   const { user } = useAuth()
-  // The read policy for `follows` is signed-in only, so anonymous visitors do
-  // not request lists they can never see.
-  const followersQuery = useFollows(user ? profile.id : undefined, 'followers')
-  const followingQuery = useFollows(user ? profile.id : undefined, 'following')
-  const followers = followersQuery.data ?? []
-  const following = followingQuery.data ?? []
   const [list, setList] = useState<{ kind: 'followers' | 'following'; open: boolean } | null>(null)
+  // Counters come from the profile row (maintained by database triggers), so
+  // they are correct for signed-out visitors and never require loading the
+  // whole graph.
+  const followersCount = profile.followers_count ?? 0
+  const followingCount = profile.following_count ?? 0
 
   async function copyProfileLink() {
     try {
@@ -225,16 +223,21 @@ export function ProfileHeader({
               <>
                 <StatButton
                   label="المتابعون"
-                  value={formatCount(followers.length)}
+                  value={formatCount(followersCount)}
                   onClick={() => setList({ kind: 'followers', open: true })}
                 />
                 <StatButton
                   label="يتابع"
-                  value={formatCount(following.length)}
+                  value={formatCount(followingCount)}
                   onClick={() => setList({ kind: 'following', open: true })}
                 />
               </>
-            ) : null}
+            ) : (
+              <>
+                <Stat label="المتابعون" value={formatCount(followersCount)} />
+                <Stat label="يتابع" value={formatCount(followingCount)} />
+              </>
+            )}
             <Stat
               label="المنشورات"
               value={stats ? formatCount(stats.posts) : '—'}

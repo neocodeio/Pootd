@@ -81,23 +81,6 @@ function patchPostsData(
   return changed ? { ...data, pages } : data
 }
 
-function patchPostArray(
-  posts: PostWithAuthor[] | undefined,
-  counts: PostCountsRow,
-): PostWithAuthor[] | undefined {
-  if (!posts) return posts
-
-  let changed = false
-  const next = posts.map((post) => {
-    if (post.id !== counts.id) return post
-    const updated = withCounts(post, counts)
-    if (updated !== post) changed = true
-    return updated
-  })
-
-  return changed ? next : posts
-}
-
 /**
  * The like and comment counters are maintained by database triggers, so the
  * updated post row is the authoritative value — no local +/- guessing.
@@ -113,11 +96,11 @@ function applyPostCounts(queryClient: QueryClient, counts: PostCountsRow): void 
     })
   }
 
-  queryClient.setQueriesData<PostWithAuthor[]>(
+  queryClient.setQueriesData<PostsData>(
     { queryKey: ['search', 'posts'] },
-    (posts) => {
-      const next = patchPostArray(posts, counts)
-      if (next !== posts) changed = true
+    (data) => {
+      const next = patchPostsData(data, counts)
+      if (next !== data) changed = true
       return next
     },
   )
@@ -207,6 +190,7 @@ function resyncQueries(queryClient: QueryClient): void {
     ['notifications'],
     ['notifications-unread'],
     ['follows'],
+    ['profile'],
     ['profile-stats'],
     ['trending-tags'],
     ['search'],
@@ -249,10 +233,13 @@ export function useRealtimeSync(): void {
     // signed-in user's own lists.
     const scheduleFollowsRefresh = () => {
       window.clearTimeout(followsTimer)
-      followsTimer = window.setTimeout(
-        () => queryClient.invalidateQueries({ queryKey: ['follows'] }),
-        150,
-      )
+      followsTimer = window.setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['follows'] })
+        // The numbers on a profile come from its own row now, so the open
+        // profile must refetch as well — including when a third person
+        // followed the profile the viewer is reading.
+        queryClient.invalidateQueries({ queryKey: ['profile'] })
+      }, 150)
     }
 
     const scheduleOwnLikeRefresh = () => {

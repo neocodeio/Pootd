@@ -5,6 +5,7 @@ import { useTheme } from '@/hooks/use-theme'
 import { AppShell } from '@/components/layout/app-shell'
 import { RequireAuth } from '@/components/require-auth'
 import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { SetupPage } from '@/pages/setup'
 
@@ -91,44 +92,46 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ScrollToTop />
-        <Suspense fallback={<FullPageFallback />}>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route index element={<FeedPage />} />
-              <Route path="explore" element={<ExplorePage />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route
-                path="notifications"
-                element={
-                  <RequireAuth>
-                    <NotificationsPage />
-                  </RequireAuth>
-                }
-              />
-              <Route path="tags/:tag" element={<TagPage />} />
-              <Route path="p/:id" element={<PostPage />} />
-              <Route path="u/:username" element={<ProfilePage />} />
-              <Route
-                path="settings"
-                element={
-                  <RequireAuth>
-                    <SettingsPage />
-                  </RequireAuth>
-                }
-              />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/verify" element={<VerifyPage />} />
-            <Route path="/reset" element={<ResetPage />} />
-            <Route path="/reset/password" element={<ResetPasswordPage />} />
-          </Routes>
-        </Suspense>
-        <Toaster theme={resolvedTheme} position="bottom-center" />
-      </AuthProvider>
+      <TooltipProvider delayDuration={200}>
+        <AuthProvider>
+          <ScrollToTop />
+          <Suspense fallback={<FullPageFallback />}>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route index element={<FeedPage />} />
+                <Route path="explore" element={<ExplorePage />} />
+                <Route path="search" element={<SearchPage />} />
+                <Route
+                  path="notifications"
+                  element={
+                    <RequireAuth>
+                      <NotificationsPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route path="tags/:tag" element={<TagPage />} />
+                <Route path="p/:id" element={<PostPage />} />
+                <Route path="u/:username" element={<ProfilePage />} />
+                <Route
+                  path="settings"
+                  element={
+                    <RequireAuth>
+                      <SettingsPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/verify" element={<VerifyPage />} />
+              <Route path="/reset" element={<ResetPage />} />
+              <Route path="/reset/password" element={<ResetPasswordPage />} />
+            </Routes>
+          </Suspense>
+          <Toaster theme={resolvedTheme} position="bottom-center" />
+        </AuthProvider>
+      </TooltipProvider>
     </BrowserRouter>
   )
 }

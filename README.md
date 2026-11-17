@@ -43,7 +43,10 @@ pootd/
       ├─ 0008_realtime.sql   realtime publication for live updates
       ├─ 0009_post_edit_marker.sql  "معدّل" only after a real edit
       ├─ 0010_follows.sql   followers / following social graph
-      └─ 0011_follows_notifications.sql  follow notifications + live follow numbers
+      ├─ 0011_follows_notifications.sql  follow notifications + live follow numbers
+      ├─ 0012_follow_counts.sql  public follower / following counters
+      ├─ 0013_arabic_search.sql  Arabic-normalized search columns and indexes
+      └─ 0014_abuse_limits.sql   rate limits + trending-tag minimum
 ```
 
 ## Setup
@@ -62,9 +65,11 @@ Follow [`backend/README.md`](backend/README.md). In short:
    `backend/supabase/migrations/0007_rate_limits.sql`,
    `backend/supabase/migrations/0008_realtime.sql`,
    `backend/supabase/migrations/0009_post_edit_marker.sql`,
-   `backend/supabase/migrations/0010_follows.sql`, and
-   `backend/supabase/migrations/0011_follows_notifications.sql` in the **SQL
-   Editor**.
+   `backend/supabase/migrations/0010_follows.sql`,
+   `backend/supabase/migrations/0011_follows_notifications.sql`,
+   `backend/supabase/migrations/0012_follow_counts.sql`,
+   `backend/supabase/migrations/0013_arabic_search.sql`, and
+   `backend/supabase/migrations/0014_abuse_limits.sql` in the **SQL Editor**.
 3. Keep **Confirm email enabled**. The OTP service confirms users after a valid
    4-digit code.
 4. Set **Site URL** to `http://localhost:5173` and add
@@ -125,6 +130,7 @@ Run from `frontend/`:
 | `npm run build` | Type-check and production build |
 | `npm run typecheck` | TypeScript only |
 | `npm run lint` | Oxlint |
+| `npm test` | Vitest unit tests |
 | `npm run preview` | Preview the production build |
 
 Run from `backend/`:
@@ -139,12 +145,15 @@ Run from `backend/`:
 - Public feed with newest / most-liked sorting.
 - Post composer with up to five normalized tags.
 - Editing your own posts, with an "معدّل" marker.
-- Search across posts and members (`/search`), Arabic-aware.
+- Search across posts and members (`/search`), Arabic-aware — alef/hamza, taa
+  marbuta and alef maqsura variants match — with paginated post results.
 - Save posts to your profile ("المحفوظات").
 - Likes with optimistic UI and server-maintained counters.
 - Flat comments with author/post-author delete permissions.
-- Tag pages and an Explore page with trending tags.
-- Profiles: bio, links, join date, stats, posts tab, liked-posts tab.
+- Tag pages and an Explore page with trending tags (a tag trends after two
+  posts, so one-off tags stay out).
+- Profiles: bio, links, join date, stats, posts tab, liked-posts tab, and
+  follower/following counters that are correct for signed-out visitors.
 - Editable profile with avatar upload (PNG/JPG/WebP, 2 MB max) and a cover image
   (PNG/JPG/WebP, 5 MB max).
 - Click the avatar or the cover image to open a full-size preview.
@@ -153,13 +162,19 @@ Run from `backend/`:
 - Responsive RTL layout with a desktop header and mobile bottom navigation.
 - Dark mode with a light / dark / system preference that persists across visits
   and never flashes the wrong theme on load.
+- Database-enforced rate limits on posts, comments, likes, follows, bookmarks and
+  reports.
 - Skeleton loading, empty states, error states, and toasts.
+- An app-level error boundary instead of a blank page when a screen throws.
 
 ## Security model
 
 - RLS is enabled on `profiles`, `posts`, `likes`, `comments`, and `bookmarks`.
 - Column-level grants stop clients from forging counters, IDs, authors, or
-  timestamps. Counters are updated by `SECURITY DEFINER` triggers.
+  timestamps. Counters (likes, comments, followers, following) are updated by
+  `SECURITY DEFINER` triggers.
+- Rate limits for posts, comments, likes, follows, bookmarks and reports are
+  enforced in Postgres (`0007`, `0014`), so the anon key cannot bypass them.
 - Users can only write rows they own. Post authors can also delete comments on
   their own posts.
 - Profiles never expose emails; `auth.users` is not publicly readable.
@@ -187,9 +202,13 @@ Run from `backend/`:
 - Consider adding security headers (CSP, HSTS, `X-Content-Type-Options`) at the
   edge.
 
-## Intentionally out of scope for this MVP
+## Intentionally out of scope
 
-Pagination/infinite scroll, realtime updates, notifications, direct messages,
-follows, password reset, reporting/moderation tools, and a language/RTL toggle.
+- Direct messages — a phishing surface this MVP does not want to moderate yet.
+- A moderation UI: reports are stored and RLS-protected, but the queue is
+  reviewed from the Supabase dashboard for now.
+- Media in posts (only avatars and covers are uploaded).
+- @mentions and notification email digests.
+
 The schema and API layer are structured so these can be added without reworking
 the basics.

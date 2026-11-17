@@ -185,19 +185,28 @@ Never hard-code colours. Use the semantic tokens in `src/index.css`:
 The `.dark` block mirrors the `:root` block. If you add a token, add it to
 both. `--like` is the heart accent: `oklch(0.58 0.22 25)` light,
 `oklch(0.70 0.19 25)` dark. `--tag` is the hashtag accent:
-`oklch(0.52 0.16 255)` light, `oklch(0.74 0.12 255)` dark. Those two are the
-only colours in the product.
+`oklch(0.52 0.16 255)` light, `oklch(0.74 0.12 255)` dark. `--verified-check`
+is the tick inside the verified seal, `oklch(1 0 0)` white in both themes.
+Those are the only colours in the product.
 
 ## Verified badge
 
 The badge (`components/verified-badge.tsx`) is the `CheckmarkBadge02Icon`
-Hugeicons seal rendered in `--tag` blue (`text-tag`) — no circle behind it, the
-glyph *is* the badge. Default `size-4` next to the profile name, `size-3.5` in
-lists/search/notifications, `strokeWidth={2}` so it holds up at 16px, labelled
-`حساب موثّق` for screen readers. It renders beside the display name on the
-profile header, post cards, comments, follower/following lists, search results
-and notifications. Verified accounts live in `frontend/src/lib/verified.ts`
-(currently `amin`); add a username there to verify that account.
+Hugeicons seal: the silhouette path is filled `--tag` blue and keeps its 1.5
+stroke so the wavy points stay round, and the tick path is drawn again on top in
+`--verified-check` white (`strokeWidth={2.5}`) so it reads as a cut-out. Default
+`size-4` next to the profile name, `size-3.5` in lists/search/notifications,
+labelled `حساب موثّق` for screen readers. It renders beside the display name on
+the profile header, post cards, comments, follower/following lists, search
+results and notifications. Verified accounts live in
+`frontend/src/lib/verified.ts` (currently `amin`); add a username there to
+verify that account.
+
+Hovering the badge shows a Radix tooltip (`components/ui/tooltip.tsx`, provider
+in `App.tsx`) reading **«هالحساب موثّق»** — Saudi dialect, anchored above the
+badge. Do not add a `title` attribute back: it would double up with the tooltip.
+Keep the tooltip monochrome (`bg-foreground text-background`), `text-xs`, and
+never the `--like` red.
 
 ## Radii
 
@@ -226,8 +235,9 @@ and notifications. Verified accounts live in `frontend/src/lib/verified.ts`
 
 ## Working rules
 
-- Run `npm run typecheck`, `npm run lint`, `npm run build` in `frontend/` before
-  saying a change is done. For `backend/`, `node --check` each file in `src/`.
+- Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run build` in
+  `frontend/` before saying a change is done. For `backend/`, `node --check`
+  each file in `src/`.
 - Verify visually in a real browser (headless Chrome over CDP) before claiming
   a UI change works — screenshots at 1920×919 (desktop) and 390×844 (mobile),
   in both light and dark mode. Compare the desktop dark shot with
@@ -237,3 +247,9 @@ and notifications. Verified accounts live in `frontend/src/lib/verified.ts`
 - Database changes go in a new numbered migration under
   `backend/supabase/migrations/`; the owner runs them in the Supabase SQL
   editor, so always tell them which file to run.
+- Counters live on the row: `posts.like_count` / `comment_count` and
+  `profiles.followers_count` / `following_count` are trigger-maintained. Read
+  them; never derive a count by fetching a list and measuring its length.
+- Search compares the normalized `search_text` columns. `normalizeArabic` in
+  `frontend/src/lib/validation.ts` mirrors `public.normalize_arabic` in
+  `0013_arabic_search.sql` — change both together.

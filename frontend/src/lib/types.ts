@@ -45,6 +45,9 @@ export interface Profile {
   cover_image_url: string
   website: string
   github: string
+  /** Maintained by the `follows` triggers — never derived from a fetched list. */
+  followers_count: number
+  following_count: number
   created_at: string
   updated_at: string
 }

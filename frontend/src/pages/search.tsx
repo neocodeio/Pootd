@@ -17,6 +17,7 @@ import {
   useSearchPosts,
   useSearchProfiles,
 } from '@/hooks/use-pootd'
+import { flattenPages } from '@/lib/pagination'
 import { sanitizeSearchTerm } from '@/lib/validation'
 import { isVerified } from '@/lib/verified'
 
@@ -35,11 +36,9 @@ export function SearchPage() {
   const query = urlQuery.trim()
   const postsQuery = useSearchPosts(query)
   const profilesQuery = useSearchProfiles(query)
+  const posts = flattenPages(postsQuery.data)
 
-  const postIds = useMemo(
-    () => (postsQuery.data ?? []).map((post) => post.id),
-    [postsQuery.data],
-  )
+  const postIds = useMemo(() => (posts ?? []).map((post) => post.id), [posts])
   const likedIds = useLikedPostIds(postIds)
   const bookmarkedIds = useBookmarkedPostIds(postIds)
 
@@ -60,7 +59,7 @@ export function SearchPage() {
     hasQuery &&
     !postsQuery.isLoading &&
     !profilesQuery.isLoading &&
-    (postsQuery.data?.length ?? 0) === 0 &&
+    (posts?.length ?? 0) === 0 &&
     (profilesQuery.data?.length ?? 0) === 0
 
   return (
@@ -140,12 +139,15 @@ export function SearchPage() {
         <section>
           <h2 className="mb-3 text-sm font-semibold">المنشورات</h2>
           <PostList
-            posts={postsQuery.data}
+            posts={posts}
             isLoading={postsQuery.isLoading}
             error={postsQuery.error}
             likedIds={likedIds.data}
             bookmarkedIds={bookmarkedIds.data}
             onRetry={() => void postsQuery.refetch()}
+            hasMore={postsQuery.hasNextPage}
+            isLoadingMore={postsQuery.isFetchingNextPage}
+            onLoadMore={() => void postsQuery.fetchNextPage()}
             emptyTitle="ما فيه منشورات"
             emptyDescription="ما لقينا منشورات تطابق بحثك."
           />
