@@ -68,8 +68,12 @@ Follow [`backend/README.md`](backend/README.md). In short:
    `backend/supabase/migrations/0010_follows.sql`,
    `backend/supabase/migrations/0011_follows_notifications.sql`,
    `backend/supabase/migrations/0012_follow_counts.sql`,
-   `backend/supabase/migrations/0013_arabic_search.sql`, and
-   `backend/supabase/migrations/0014_abuse_limits.sql` in the **SQL Editor**.
+   `backend/supabase/migrations/0013_arabic_search.sql`,
+   `backend/supabase/migrations/0014_abuse_limits.sql`,
+   `backend/supabase/migrations/0015_post_images.sql`,
+   `backend/supabase/migrations/0016_mentions_replies.sql`, and
+   `backend/supabase/migrations/0017_suggested_profiles.sql` in the **SQL
+   Editor**.
 3. Keep **Confirm email enabled**. The OTP service confirms users after a valid
    4-digit code.
 4. Set **Site URL** to `http://localhost:5173` and add
@@ -195,6 +199,12 @@ Run from `backend/`:
   `npm run build`, output `dist`).
 - Configure an SPA fallback to `index.html` if your host does not do it
   automatically.
+- The included Vercel config (`frontend/vercel.json` + `frontend/api/og.js`)
+  serves per-URL Open Graph tags for `/p/:id`, `/u/:username` and `/tags/:tag`.
+  Deploy with `frontend/` as the project root and set `PUBLIC_SITE_URL` to the
+  canonical domain so every `og:url`/`og:image` is absolute. On Netlify or
+  Cloudflare Pages, port the handler to an edge function and mirror the three
+  rewrites; an SPA fallback by itself does not add per-post meta.
 - Add the production domain to Supabase **Site URL** and **Redirect URLs**.
 - Deploy `backend/` to a Node host, set `APP_ORIGINS` to the frontend origin, and
   configure all backend environment variables.
@@ -207,8 +217,7 @@ Run from `backend/`:
 - Direct messages — a phishing surface this MVP does not want to moderate yet.
 - A moderation UI: reports are stored and RLS-protected, but the queue is
   reviewed from the Supabase dashboard for now.
-- Media in posts (only avatars and covers are uploaded).
-- @mentions and notification email digests.
+- Notification email digests.
 
 The schema and API layer are structured so these can be added without reworking
 the basics.

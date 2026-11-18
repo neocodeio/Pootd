@@ -15,6 +15,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { ImagePreview } from '@/components/image-preview'
 import { BookmarkButton } from '@/components/post/bookmark-button'
 import { LikeButton } from '@/components/post/like-button'
 import { PostContent } from '@/components/post/post-content'
@@ -60,6 +61,7 @@ export function PostCard({
   const updatePost = useUpdatePost()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [imageOpen, setImageOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftContent, setDraftContent] = useState(post.content)
 
@@ -78,14 +80,17 @@ export function PostCard({
   }
 
   function handleDelete() {
-    deletePost.mutate(post.id, {
-      onSuccess: () => {
-        setConfirmOpen(false)
-        toast.success('تم حذف المنشور')
-        if (location.pathname === `/p/${post.id}`) navigate('/')
+    deletePost.mutate(
+      { postId: post.id, imageUrl: post.image_url ?? undefined },
+      {
+        onSuccess: () => {
+          setConfirmOpen(false)
+          toast.success('تم حذف المنشور')
+          if (location.pathname === `/p/${post.id}`) navigate('/')
+        },
+        onError: (error) => toast.error(error.message),
       },
-      onError: (error) => toast.error(error.message),
-    })
+    )
   }
 
   function startEditing() {
@@ -292,6 +297,23 @@ export function PostCard({
             </Link>
           ) : null}
 
+          {post.image_url ? (
+            <button
+              type="button"
+              onClick={() => setImageOpen(true)}
+              className="mt-3 block w-full cursor-zoom-in overflow-hidden rounded-xl border border-border bg-secondary/40"
+              aria-label="عرض الصورة بحجم كامل"
+            >
+              <img
+                src={post.image_url}
+                alt={`صورة مرفقة بمنشور ${post.author.display_name}`}
+                loading="lazy"
+                decoding="async"
+                className="max-h-[32rem] w-full object-contain"
+              />
+            </button>
+          ) : null}
+
           <div className="mt-3 flex items-center gap-0.5">
             <LikeButton postId={post.id} likeCount={post.like_count} liked={liked} />
             <Button
@@ -319,6 +341,13 @@ export function PostCard({
           </div>
         </div>
       </div>
+
+      <ImagePreview
+        open={imageOpen}
+        onOpenChange={setImageOpen}
+        src={post.image_url ?? ''}
+        alt={`صورة مرفقة بمنشور ${post.author.display_name}`}
+      />
 
       <ConfirmDialog
         open={confirmOpen}

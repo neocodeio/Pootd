@@ -14,6 +14,7 @@ import {
   getPost,
   getProfileByUsername,
   getProfileStats,
+  getSuggestedProfiles,
   getTrendingTags,
   getUnreadNotificationCount,
   getUserPosts,
@@ -122,6 +123,16 @@ export function useProfileStats(userId: string | undefined) {
     queryFn: () => getProfileStats(userId ?? ''),
     enabled: Boolean(userId),
     staleTime: 30_000,
+  })
+}
+
+export function useSuggestedProfiles() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: queryKeys.suggestedProfiles(user?.id ?? 'anon'),
+    queryFn: () => getSuggestedProfiles(user?.id, 5),
+    staleTime: 60_000,
   })
 }
 

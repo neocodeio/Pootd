@@ -25,6 +25,12 @@ server.
    - `supabase/migrations/0009_post_edit_marker.sql`
    - `supabase/migrations/0010_follows.sql`
    - `supabase/migrations/0011_follows_notifications.sql`
+   - `supabase/migrations/0012_follow_counts.sql`
+   - `supabase/migrations/0013_arabic_search.sql`
+   - `supabase/migrations/0014_abuse_limits.sql`
+   - `supabase/migrations/0015_post_images.sql`
+   - `supabase/migrations/0016_mentions_replies.sql`
+   - `supabase/migrations/0017_suggested_profiles.sql`
 3. Open **Authentication → Sign In / Providers → Email** and keep
    **Confirm email enabled**. The OTP service creates users as unconfirmed and
    confirms them only after a valid 4-digit code.
@@ -86,7 +92,14 @@ with RLS-scoped writes and readable username lists) and puts it in the
 `supabase_realtime` publication. `0011_follows_notifications.sql` adds the follow
 notification type, the follow trigger and its removal on unfollow, and re-asserts
 the `follows` publication membership (guarded, so it is safe on an existing
-project that applied `0010` before that line existed).
+project that applied `0010` before that line existed). `0012_follow_counts.sql`
+maintains follower/following counters on the profile row, `0013_arabic_search.sql`
+adds normalized search columns and RPCs, and `0014_abuse_limits.sql` caps likes,
+follows, bookmarks and reports. `0015_post_images.sql` adds `posts.image_url`
+and the public `post-images` bucket (5 MB max, PNG/JPEG/WebP). `0016_mentions_replies.sql`
+adds `comments.parent_id`, mention parsing, and the `mention`/`reply`
+notification triggers. `0017_suggested_profiles.sql` adds the RPC behind the
+Explore "who to follow" list.
 
 If the API does not pick up the new `cover_image_url` column right away, run
 `NOTIFY pgrst, 'reload schema';` in the SQL Editor.

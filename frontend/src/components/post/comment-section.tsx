@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
+  Cancel01Icon,
   Delete02Icon,
   Flag01Icon,
   Loading03Icon,
+  ReplyIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { PostContent } from '@/components/post/post-content'
 import { ReportDialog } from '@/components/report-dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { VerifiedBadge } from '@/components/verified-badge'
@@ -45,25 +48,40 @@ export function CommentSection({
   const [content, setContent] = useState('')
   const [target, setTarget] = useState<CommentWithAuthor | null>(null)
   const [reportTarget, setReportTarget] = useState<CommentWithAuthor | null>(null)
+  const [replyTo, setReplyTo] = useState<CommentWithAuthor | null>(null)
+  const commentInputRef = useRef<HTMLTextAreaElement>(null)
 
   const comments = flattenPages(data)
   const canSubmit = content.trim().length > 0 && !createComment.isPending
 
+  function startReply(comment: CommentWithAuthor) {
+    setReplyTo(comment)
+    window.requestAnimationFrame(() => {
+      commentInputRef.current?.focus()
+      commentInputRef.current?.scrollIntoView({ block: 'center' })
+    })
+  }
+
   function submit() {
     if (!canSubmit) return
-    createComment.mutate(content, {
-      onSuccess: () => {
-        setContent('')
-        toast.success('تم إضافة التعليق')
+    createComment.mutate(
+      { content, parentId: replyTo?.id },
+      {
+        onSuccess: () => {
+          setContent('')
+          setReplyTo(null)
+          toast.success(replyTo ? 'تم إضافة الرد' : 'تم إضافة التعليق')
+        },
+        onError: (mutationError) => toast.error(mutationError.message),
       },
-      onError: (mutationError) => toast.error(mutationError.message),
-    })
+    )
   }
 
   function handleDelete() {
     if (!target) return
     deleteComment.mutate(target.id, {
       onSuccess: () => {
+        if (replyTo?.id === target.id) setReplyTo(null)
         setTarget(null)
         toast.success('تم حذف التعليق')
       },
@@ -91,11 +109,30 @@ export function CommentSection({
           >
             <UserAvatar profile={profile} className="hidden size-8 sm:flex" />
             <div className="flex-1 rounded-lg border border-border bg-background p-2.5 transition-colors focus-within:border-foreground/25">
+              {replyTo ? (
+                <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-secondary/60 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                  <span>
+                    ردًا على{' '}
+                    <span dir="ltr" className="font-medium text-foreground">
+                      @{replyTo.author.username}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setReplyTo(null)}
+                    aria-label="إلغاء الرد"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+                  </button>
+                </div>
+              ) : null}
               <Label htmlFor="comment-input" className="sr-only">
-                اكتب تعليقًا
+                {replyTo ? 'اكتب ردًا' : 'اكتب تعليقًا'}
               </Label>
               <Textarea
                 id="comment-input"
+                ref={commentInputRef}
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
                 onKeyDown={(event) => {
@@ -104,7 +141,7 @@ export function CommentSection({
                     submit()
                   }
                 }}
-                placeholder="أضف تعليقًا…"
+                placeholder={replyTo ? `اكتب ردًا على @${replyTo.author.username}…` : 'أضف تعليقًا…'}
                 rows={2}
                 maxLength={MAX_COMMENT_LENGTH}
                 dir="auto"
@@ -198,6 +235,16 @@ export function CommentSection({
                         {timeAgo(comment.created_at)}
                       </span>
                       <span className="ms-auto flex items-center gap-1">
+                        {user ? (
+                          <button
+                            type="button"
+                            onClick={() => startReply(comment)}
+                            aria-label={`رد على ${comment.author.display_name}`}
+                            className="text-muted-foreground/60 opacity-100 transition-colors hover:text-foreground sm:opacity-0 sm:group-hover:opacity-100"
+                          >
+                            <HugeiconsIcon icon={ReplyIcon} className="size-3.5" />
+                          </button>
+                        ) : null}
                         {canReport ? (
                           <button
                             type="button"
@@ -220,12 +267,10 @@ export function CommentSection({
                         ) : null}
                       </span>
                     </div>
-                    <p
-                      dir="auto"
-                      className="mt-1 whitespace-pre-wrap break-words text-sm leading-7 text-foreground/90"
-                    >
-                      {comment.content}
-                    </p>
+                    <PostContent
+                      content={comment.content}
+                      className="mt-1 text-sm leading-7 text-foreground/90"
+                    />
                   </div>
                 </article>
               )

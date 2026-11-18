@@ -9,6 +9,7 @@ import {
   deleteComment,
   deleteCoverFile,
   deletePost,
+  deletePostImage,
   markAllNotificationsRead,
   markNotificationRead,
   toggleBookmark,
@@ -18,6 +19,7 @@ import {
   updateProfile,
   uploadAvatar,
   uploadCover,
+  uploadPostImage,
 } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
 import { supabase } from '@/lib/supabase'
@@ -137,6 +139,7 @@ export function useToggleFollow() {
       if (!user) return
       queryClient.invalidateQueries({ queryKey: ['follows'] })
       queryClient.invalidateQueries({ queryKey: ['profile'] })
+      queryClient.invalidateQueries({ queryKey: ['suggested-profiles'] })
     },
   })
 }
@@ -146,13 +149,38 @@ export function useCreatePost() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ content, tags }: { content: string; tags: string[] }) => {
+    mutationFn: async ({
+      content,
+      tags,
+      file,
+    }: {
+      content: string
+      tags: string[]
+      file?: File | null
+    }) => {
       if (!user) throw new Error('سجّل دخولك أولًا للنشر.')
-      return createPost(user.id, content, tags)
+
+      let imageUrl = ''
+      if (file) imageUrl = await uploadPostImage(user.id, file)
+
+      try {
+        return await createPost(user.id, content, tags, imageUrl)
+      } catch (error) {
+        // The upload happened first; drop the orphan if the row never landed.
+        if (imageUrl) {
+          try {
+            await deletePostImage(imageUrl)
+          } catch (cleanupError) {
+            console.error(cleanupError)
+          }
+        }
+        throw error
+      }
     },
     onSuccess: () => {
       if (!user) return
       queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['search'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.userPosts(user.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.profileStats(user.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.trendingTags() })
@@ -165,13 +193,15 @@ export function useDeletePost() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (postId: string) => deletePost(postId),
-    onSuccess: (_data, postId) => {
+    mutationFn: ({ postId, imageUrl }: { postId: string; imageUrl?: string }) =>
+      deletePost(postId, imageUrl),
+    onSuccess: (_data, { postId }) => {
       queryClient.removeQueries({ queryKey: queryKeys.post(postId) })
       queryClient.removeQueries({ queryKey: queryKeys.comments(postId) })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['user-posts'] })
       queryClient.invalidateQueries({ queryKey: ['profile-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['search'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.trendingTags() })
       // Deleting a post cascades the notifications that point at it.
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
@@ -188,9 +218,15 @@ export function useCreateComment(postId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (content: string) => {
+    mutationFn: ({
+      content,
+      parentId,
+    }: {
+      content: string
+      parentId?: string
+    }) => {
       if (!user) throw new Error('سجّل دخولك أولًا للتعليق.')
-      return createComment(postId, user.id, content)
+      return createComment(postId, user.id, content, parentId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.comments(postId) })

@@ -1,4 +1,5 @@
 import { PostList } from '@/components/post/post-list'
+import { SuggestedProfiles } from '@/components/profile/suggested-profiles'
 import { TrendingTags } from '@/components/trending-tags'
 import { useBookmarkedPostIds, useFeed, useLikedPostIds } from '@/hooks/use-pootd'
 import { flattenPages } from '@/lib/pagination'
@@ -17,6 +18,8 @@ export function ExplorePage() {
           تصفّح ما يتحدث عنه المجتمع، والمنشورات الأكثر تفاعلًا.
         </p>
       </header>
+
+      <SuggestedProfiles />
 
       <section>
         <div className="flex items-baseline justify-between gap-3">

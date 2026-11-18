@@ -14,7 +14,7 @@ export function Brand({
     <Link
       to={to}
       aria-label="بوتد — الصفحة الرئيسية"
-      className={cn('group inline-flex items-center', className)}
+      className={cn('group inline-flex shrink-0 items-center', className)}
     >
       <span className="flex flex-col items-start leading-none">
         <img
@@ -25,7 +25,7 @@ export function Brand({
           className="h-7 w-auto transition-transform duration-200 group-hover:scale-[1.03] dark:invert"
         />
         {variant === 'full' ? (
-          <span className="mt-1 text-[11px] font-medium text-muted-foreground">
+          <span className="mt-1 whitespace-nowrap text-[11px] font-medium text-muted-foreground">
             مجتمع الأمن السيبراني
           </span>
         ) : null}

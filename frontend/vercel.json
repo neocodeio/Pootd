@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "routes": [
+    {
+      "src": "/p/([^/]+)",
+      "dest": "/api/og?type=post&id=$1"
+    },
+    {
+      "src": "/u/([^/]+)",
+      "dest": "/api/og?type=profile&username=$1"
+    },
+    {
+      "src": "/tags/([^/]+)",
+      "dest": "/api/og?type=tag&tag=$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

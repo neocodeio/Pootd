@@ -3,6 +3,7 @@ import {
   DiscoverCircleIcon,
   Home03Icon,
   PencilEdit02Icon,
+  Search01Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -55,7 +56,7 @@ function DesktopHeader() {
   const { user, profile, loading } = useAuth()
 
   return (
-    <header className="sticky top-0 z-30 hidden border-b border-border/80 bg-background/80 backdrop-blur-xl sm:block">
+    <header className="sticky top-0 z-30 hidden border-b border-border/80 bg-background/80 backdrop-blur-xl lg:block">
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-7">
           <Brand />
@@ -65,6 +66,9 @@ function DesktopHeader() {
             </HeaderLink>
             <HeaderLink to="/explore" icon={<HugeiconsIcon icon={DiscoverCircleIcon} className="size-4" />}>
               استكشف
+            </HeaderLink>
+            <HeaderLink to="/search" icon={<HugeiconsIcon icon={Search01Icon} className="size-4" />}>
+              بحث
             </HeaderLink>
             {user && profile ? (
               <HeaderLink
@@ -115,7 +119,7 @@ function MobileHeader() {
   const { user, loading } = useAuth()
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/80 px-4 backdrop-blur-xl sm:hidden">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/80 px-4 backdrop-blur-xl lg:hidden">
       <Brand variant="compact" />
       <div className="flex items-center gap-1.5">
         <ThemeToggle />
@@ -152,12 +156,12 @@ export function AppShell() {
     <div className="flex min-h-svh flex-col bg-background">
       <DesktopHeader />
       <MobileHeader />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 pt-4 sm:px-6 sm:pb-12 sm:pt-8">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 pt-4 sm:px-6 sm:pt-8 lg:pb-12">
         <Suspense fallback={<PageFallback />}>
           <Outlet />
         </Suspense>
       </main>
-      <footer className="mx-auto hidden w-full max-w-2xl items-center justify-between border-t border-border px-6 py-6 text-xs text-muted-foreground sm:flex">
+      <footer className="mx-auto hidden w-full max-w-2xl items-center justify-between border-t border-border px-6 py-6 text-xs text-muted-foreground lg:flex">
         <span>© {currentYear} بوتد</span>
         <span>مساحة عربية للأمن السيبراني</span>
       </footer>

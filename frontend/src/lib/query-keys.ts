@@ -11,6 +11,7 @@ export const queryKeys = {
   likedPostsCount: (userId: string) => ['liked-posts-count', userId] as const,
   profile: (username: string) => ['profile', username] as const,
   profileStats: (userId: string) => ['profile-stats', userId] as const,
+  suggestedProfiles: (viewerId: string) => ['suggested-profiles', viewerId] as const,
   trendingTags: () => ['trending-tags'] as const,
   searchPosts: (query: string) => ['search', 'posts', query] as const,
   searchProfiles: (query: string) => ['search', 'profiles', query] as const,

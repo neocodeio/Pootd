@@ -35,6 +35,18 @@ describe('PostContent', () => {
     expect(link.getAttribute('rel')).toContain('nofollow')
   })
 
+  it('links mentions to the mentioned profile', () => {
+    renderContent('سؤال لـ @Amin عن الثغرة')
+    const link = screen.getByRole('link', { name: '@Amin' })
+    expect(link.getAttribute('href')).toBe('/u/amin')
+    expect(link.className).not.toContain('text-tag')
+  })
+
+  it('does not turn an email address into a mention link', () => {
+    renderContent('راسلني على name@example.com')
+    expect(screen.queryByRole('link', { name: '@example' })).toBeNull()
+  })
+
   it('keeps plain text selectable with no stretched link', () => {
     const { container } = renderContent('نص عادي بدون وسوم')
     expect(container.querySelectorAll('a')).toHaveLength(0)

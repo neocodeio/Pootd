@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  extractMentions,
   extractTags,
   normalizeArabic,
   normalizeSearchTerm,
@@ -31,6 +32,23 @@ describe('extractTags', () => {
   it('ignores hashtags glued to words or hidden in URLs', () => {
     expect(extractTags('abc#def')).toEqual([])
     expect(extractTags('http://example.com/#frag')).toEqual([])
+  })
+})
+
+describe('extractMentions', () => {
+  it('extracts distinct usernames and lowercases them', () => {
+    expect(extractMentions('راجع @Amin و @amin و@security_1')).toEqual([
+      'amin',
+      'security_1',
+    ])
+  })
+
+  it('does not treat an email address as a mention', () => {
+    expect(extractMentions('راسلني على name@example.com')).toEqual([])
+  })
+
+  it('ignores handles shorter than three characters', () => {
+    expect(extractMentions('@ab @abc')).toEqual(['abc'])
   })
 })
 

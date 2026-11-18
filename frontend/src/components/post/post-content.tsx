@@ -1,12 +1,17 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { HASHTAG_REGEX, TAG_REGEX } from '@/lib/validation'
+import { HASHTAG_REGEX, MENTION_REGEX, TAG_REGEX } from '@/lib/validation'
 import { cn } from '@/lib/utils'
 
 const linkClass = 'text-tag transition-opacity hover:opacity-80'
+const mentionClass =
+  'font-medium text-foreground underline-offset-4 transition-opacity hover:underline'
 
 const URL_SOURCE = String.raw`https?:\/\/[^\s<>"']+|www\.[^\s<>"']+`
-const TOKEN_REGEX = new RegExp(`(${URL_SOURCE})|(${HASHTAG_REGEX.source})`, 'gu')
+const TOKEN_REGEX = new RegExp(
+  `(${URL_SOURCE})|(${HASHTAG_REGEX.source})|(${MENTION_REGEX.source})`,
+  'gu',
+)
 const TRAILING_PUNCTUATION = /[.,;:!?،؛؟»”"')\]}]+$/
 
 function trimUrl(value: string): string {
@@ -14,9 +19,10 @@ function trimUrl(value: string): string {
 }
 
 /**
- * Renders post text with hashtags highlighted where the author typed them and
- * raw URLs turned into links. The link text stays the URL itself, so the
- * destination host is always visible even for shortened links.
+ * Renders post text with hashtags highlighted where the author typed them,
+ * @mentions linked to profiles, and raw URLs turned into links. The link text
+ * stays the URL itself, so the destination host is always visible even for
+ * shortened links.
  */
 function renderPostContent(content: string): ReactNode {
   const parts: ReactNode[] = []
@@ -44,7 +50,7 @@ function renderPostContent(content: string): ReactNode {
         </a>,
       )
       if (trailing) parts.push(trailing)
-    } else {
+    } else if (match[2]) {
       const tag = raw.slice(1).toLowerCase()
       parts.push(
         TAG_REGEX.test(tag) ? (
@@ -56,6 +62,19 @@ function renderPostContent(content: string): ReactNode {
             {raw}
           </span>
         ),
+      )
+    } else {
+      const username = raw.slice(1).toLowerCase()
+      parts.push(
+        <Link
+          key={index}
+          to={`/u/${username}`}
+          dir="ltr"
+          title={`عرض ملف @${username}`}
+          className={mentionClass}
+        >
+          {raw}
+        </Link>,
       )
     }
 

@@ -24,7 +24,7 @@ export interface ReportInput {
 
 export type ReportReason = 'spam' | 'harassment' | 'malicious_link' | 'other'
 
-export type NotificationType = 'like' | 'comment' | 'follow'
+export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'reply'
 
 export interface Notification {
   id: string
@@ -57,6 +57,7 @@ export interface Post {
   author_id: string
   content: string
   tags: string[]
+  image_url: string | null
   like_count: number
   comment_count: number
   created_at: string
@@ -71,6 +72,7 @@ export interface Comment {
   id: string
   post_id: string
   author_id: string
+  parent_id: string | null
   content: string
   created_at: string
 }

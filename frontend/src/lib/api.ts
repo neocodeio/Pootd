@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { postImageExtension, validatePostImage } from './image'
 import type {
   CommentWithAuthor,
   Cursor,
@@ -244,10 +245,16 @@ export async function createPost(
   userId: string,
   content: string,
   tags: string[],
+  imageUrl = '',
 ): Promise<PostWithAuthor> {
   const { data, error } = await supabase
     .from('posts')
-    .insert({ author_id: userId, content: content.trim(), tags })
+    .insert({
+      author_id: userId,
+      content: content.trim(),
+      tags,
+      ...(imageUrl ? { image_url: imageUrl } : {}),
+    })
     .select('*, author:profiles!posts_author_id_fkey(*)')
     .single()
 
@@ -255,9 +262,19 @@ export async function createPost(
   return data as unknown as PostWithAuthor
 }
 
-export async function deletePost(postId: string): Promise<void> {
+export async function deletePost(postId: string, imageUrl = ''): Promise<void> {
   const { error } = await supabase.from('posts').delete().eq('id', postId)
   throwIfError(error)
+
+  // The post row is gone, so a leftover object is harmless. Never turn a
+  // storage hiccup into a failed delete from the user's point of view.
+  if (imageUrl) {
+    try {
+      await deletePostImage(imageUrl)
+    } catch (cleanupError) {
+      console.error(cleanupError)
+    }
+  }
 }
 
 export async function updatePost(
@@ -334,6 +351,19 @@ export async function searchProfiles(query: string, limit = 12): Promise<Profile
   return (data ?? []) as Profile[]
 }
 
+export async function getSuggestedProfiles(
+  viewerId: string | undefined,
+  limit = 5,
+): Promise<Profile[]> {
+  const { data, error } = await supabase.rpc('get_suggested_profiles', {
+    viewer_id: viewerId ?? null,
+    profile_limit: limit,
+  })
+
+  throwIfError(error)
+  return (data ?? []) as Profile[]
+}
+
 export async function getComments(
   postId: string,
   options: { limit?: number; cursor?: Cursor | null } = {},
@@ -365,10 +395,16 @@ export async function createComment(
   postId: string,
   userId: string,
   content: string,
+  parentId?: string,
 ): Promise<CommentWithAuthor> {
   const { data, error } = await supabase
     .from('comments')
-    .insert({ post_id: postId, author_id: userId, content: content.trim() })
+    .insert({
+      post_id: postId,
+      author_id: userId,
+      content: content.trim(),
+      ...(parentId ? { parent_id: parentId } : {}),
+    })
     .select('*, author:profiles!comments_author_id_fkey(*)')
     .single()
 
@@ -601,6 +637,39 @@ export async function uploadCover(userId: string, file: File): Promise<string> {
 
 export async function deleteCoverFile(userId: string): Promise<void> {
   const { error } = await supabase.storage.from('covers').remove([`${userId}/cover`])
+  throwIfError(error)
+}
+
+export async function uploadPostImage(userId: string, file: File): Promise<string> {
+  validatePostImage(file)
+
+  const path = `${userId}/${crypto.randomUUID()}.${postImageExtension(file)}`
+  const { error } = await supabase.storage.from('post-images').upload(path, file, {
+    contentType: file.type,
+    cacheControl: '3600',
+  })
+
+  throwIfError(error)
+
+  const { data } = supabase.storage.from('post-images').getPublicUrl(path)
+  return data.publicUrl
+}
+
+/**
+ * Removes the storage object behind a post image. The URL is the only thing a
+ * post row stores; a URL that does not belong to this bucket is left alone.
+ */
+export async function deletePostImage(imageUrl: string): Promise<void> {
+  const marker = '/object/public/post-images/'
+  const markerIndex = imageUrl.indexOf(marker)
+  if (markerIndex === -1) return
+
+  const path = decodeURIComponent(
+    imageUrl.slice(markerIndex + marker.length).split('?')[0],
+  )
+  if (!path) return
+
+  const { error } = await supabase.storage.from('post-images').remove([path])
   throwIfError(error)
 }
 

@@ -16,6 +16,35 @@ import { useNotifications, useUnreadNotificationCount } from '@/hooks/use-pootd'
 import { timeAgo } from '@/lib/format'
 import { flattenPages } from '@/lib/pagination'
 import { isVerified } from '@/lib/verified'
+import type { Notification } from '@/lib/types'
+
+function notificationText(notification: Notification): string {
+  switch (notification.type) {
+    case 'like':
+      return 'أعجب بمنشورك'
+    case 'follow':
+      return 'بدأ يتبعك'
+    case 'reply':
+      return 'رد على تعليقك'
+    case 'mention':
+      return notification.comment_id
+        ? 'ذكرك في تعليق'
+        : 'ذكرك في منشور'
+    default:
+      return 'علّق على منشورك'
+  }
+}
+
+function notificationHref(notification: Notification): string {
+  if (!notification.post_id) return `/u/${notification.actor.username}`
+
+  const showComments =
+    notification.type === 'comment' ||
+    notification.type === 'reply' ||
+    (notification.type === 'mention' && Boolean(notification.comment_id))
+
+  return `/p/${notification.post_id}${showComments ? '#comments' : ''}`
+}
 
 export function NotificationsPage() {
   const notifications = useNotifications()
@@ -39,7 +68,7 @@ export function NotificationsPage() {
         <div>
           <h1 className="font-heading text-xl font-semibold tracking-tight">الإشعارات</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            الإعجابات والتعليقات على منشوراتك، وكل من يتبعك.
+            الإعجابات والتعليقات والردود والإشارات، وكل من يتبعك.
           </p>
         </div>
         {unreadCount > 0 ? (
@@ -89,7 +118,7 @@ export function NotificationsPage() {
       ) : items.length === 0 ? (
         <EmptyState
           title="ما فيه إشعارات بعد"
-          description="لما أحد يعجب بمنشوراتك أو يعلّق عليها، يظهر هنا."
+          description="لما أحد يعجب بمنشوراتك أو يعلّق عليها أو يذكرك، يظهر هنا."
           action={
             <Button asChild variant="outline" size="sm">
               <Link to="/">تصفح الرئيسية</Link>
@@ -101,21 +130,12 @@ export function NotificationsPage() {
           <Card className="divide-y divide-border overflow-hidden">
             {items.map((notification) => {
               const unreadItem = !notification.read_at
-              const text =
-                notification.type === 'like'
-                  ? 'أعجب بمنشورك'
-                  : notification.type === 'follow'
-                    ? 'بدأ يتبعك'
-                    : 'علّق على منشورك'
+              const text = notificationText(notification)
 
               return (
                 <Link
                   key={notification.id}
-                  to={
-                    notification.post_id
-                      ? `/p/${notification.post_id}`
-                      : `/u/${notification.actor.username}`
-                  }
+                  to={notificationHref(notification)}
                   onClick={() => {
                     if (unreadItem) markRead.mutate(notification.id)
                   }}

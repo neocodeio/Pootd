@@ -14,6 +14,21 @@ export const MAX_TAGS = 5
 /** Finds `#hashtag` tokens in post content — Latin or Arabic. */
 export const HASHTAG_REGEX = /(?<![A-Za-z0-9_#/])#[\p{L}\p{N}_-]+/gu
 
+/** Finds `@username` tokens after a non-word boundary, never inside an email. */
+export const MENTION_REGEX = /(?<![A-Za-z0-9_])@[A-Za-z0-9_]{3,24}/g
+
+/** The distinct usernames mentioned in content, lowercased like profiles. */
+export function extractMentions(content: string): string[] {
+  const mentions: string[] = []
+
+  for (const match of content.matchAll(MENTION_REGEX)) {
+    const username = match[0].slice(1).toLowerCase()
+    if (!mentions.includes(username)) mentions.push(username)
+  }
+
+  return mentions
+}
+
 /**
  * Extracts the tags that the backend can store from the post content the user
  * typed. Hashtags are written inline (e.g. "hi #hacking"), so the tag list is

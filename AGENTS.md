@@ -61,6 +61,13 @@ not "fix" them back without asking:
   and mobile). It is the only approved addition to the reference header; it may
   shift the create button a few pixels. The unread badge is monochrome
   (`bg-foreground text-background`), never `--like` red.
+- **The header nav carries a search link** ("بحث", `Search01Icon`) between
+  استكشف and ملفي, and the mobile bottom bar has five items (الرئيسية، استكشف،
+  أنشئ، بحث، حسابي) with أنشئ still centred. Because the fourth desktop nav
+  item does not fit beside the brand between 640 and 1023px, the desktop chrome
+  (header, footer, `lg:pb-12`, the mobile-bar swap) starts at `lg`. From 1024px
+  up the layout matches the reference exactly; below it the compact mobile
+  header and bottom nav are used.
 
 ## Reference layout (approved)
 
@@ -69,7 +76,7 @@ not "fix" them back without asking:
 | Page background | `bg-background` — flat, no gradients, no shadows on the page |
 | Header | `h-16`, `max-w-5xl`, `px-6`, `border-b border-border/80`, `bg-background/80 backdrop-blur-xl` |
 | Header start group (left) | theme toggle → "أنشئ منشور" pill → user avatar (`size-11`) |
-| Header end group (right) | brand lockup → nav (الرئيسية / استكشف / ملفي) |
+| Header end group (right) | brand lockup → nav (الرئيسية / استكشف / بحث / ملفي) |
 | Header nav | `gap-1`; items `h-9 rounded-full px-3.5 py-2 gap-2 text-sm font-medium`, icon `size-4`; active item `bg-secondary` |
 | Brand lockup | wordmark `h-7` (`120×28`) + tagline `مجتمع الأمن السيبراني` at `text-[11px]` with `mt-1`, aligned to the end edge |
 | Create button | `h-10 rounded-full px-5`, primary fill, `PencilEdit02Icon` + "أنشئ منشور" |
@@ -77,7 +84,7 @@ not "fix" them back without asking:
 | Page header | subtitle `text-sm` on the start (right) edge (title is screen-reader only — see overrides); segmented tabs on the end (left) edge |
 | Segmented tabs | track `h-8 rounded-full p-[3px] bg-secondary/60`; trigger `rounded-full px-3.5 text-sm`, active `bg-secondary shadow-sm` |
 | Cards | `rounded-2xl border border-border bg-card`, `p-4 sm:p-5` |
-| Footer | hidden below `sm`, single row, `text-xs text-muted-foreground` |
+| Footer | hidden below `lg`, single row, `text-xs text-muted-foreground` |
 
 ## Post card anatomy (approved)
 
@@ -101,6 +108,14 @@ Rules that must hold:
 - Hashtags render inline in the content (`PostContent` / `post-content.tsx`)
   in `text-tag` blue, exactly where the author typed them — no pills and no
   tag list after the text. Never re-add a stretched link around the body.
+- @mentions also render inline, as monochrome profile links
+  (`font-medium text-foreground`, underline on hover) to `/u/:username`. Only
+  `@[A-Za-z0-9_]{3,24}` after a non-word boundary counts, so `name@example.com`
+  stays plain text. Comments render through the same `PostContent`.
+- A post may carry **one optional image**: full-width inside the card,
+  `mt-3 rounded-xl border border-border`, `max-h-[32rem] object-contain`,
+  clicking opens the shared `ImagePreview` lightbox. Deleting the post deletes
+  its `post-images` object too.
 - Action row: `mt-3 flex items-center gap-0.5`, **no divider**, ghost buttons
   sized `sm`, `h-8 rounded-full px-2.5 text-xs`. Order (start → end):
   like → comments → bookmark → copy-link.
@@ -120,6 +135,11 @@ Rules that must hold:
 - Footer row: `mt-3 border-t border-border pt-3`; the counter `0/4000` on the
   start edge (the keyboard hint stays hidden — see overrides); the
   `rounded-full px-4` "نشر" pill with the `SentIcon` on the end (left) edge.
+- One optional image per post: an `ImageAdd01Icon` ghost button beside the
+  counter opens a PNG/JPEG/WebP picker (5 MB max). The selected image previews
+  above the footer (`max-h-80`, same `ImagePreview` lightbox) with a
+  `Cancel01Icon` remove button, and is uploaded to `post-images` before the
+  row is inserted. If the insert fails the upload is deleted again.
 - Submit with `Ctrl/⌘ + Enter` as well as the button; the button is disabled
   while the textarea is empty or a post is in flight.
 
