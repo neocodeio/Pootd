@@ -3,7 +3,6 @@ import {
   Home03Icon,
   Login01Icon,
   PlusSignIcon,
-  Search01Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -50,7 +49,7 @@ export function MobileNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="التنقل السفلي"
     >
-      <div className="mx-auto grid max-w-md grid-cols-5">
+      <div className="mx-auto grid max-w-md grid-cols-4">
         <MobileNavLink to="/" end icon={<HugeiconsIcon icon={Home03Icon} className="size-5" />}>
           الرئيسية
         </MobileNavLink>
@@ -66,9 +65,6 @@ export function MobileNav() {
           </span>
           <span>أنشئ</span>
         </NavLink>
-        <MobileNavLink to="/search" icon={<HugeiconsIcon icon={Search01Icon} className="size-5" />}>
-          بحث
-        </MobileNavLink>
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-1 py-2">
             <Skeleton className="size-5 rounded-full" />

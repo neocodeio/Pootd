@@ -14,7 +14,7 @@ import {
   getPost,
   getProfileByUsername,
   getProfileStats,
-  getSuggestedProfiles,
+  getTopProfiles,
   getTrendingTags,
   getUnreadNotificationCount,
   getUserPosts,
@@ -126,12 +126,12 @@ export function useProfileStats(userId: string | undefined) {
   })
 }
 
-export function useSuggestedProfiles() {
+export function useTopProfiles(limit = 5) {
   const { user } = useAuth()
 
   return useQuery({
-    queryKey: queryKeys.suggestedProfiles(user?.id ?? 'anon'),
-    queryFn: () => getSuggestedProfiles(user?.id, 5),
+    queryKey: queryKeys.topProfiles(user?.id ?? 'anon', limit),
+    queryFn: () => getTopProfiles(limit, user?.id),
     staleTime: 60_000,
   })
 }

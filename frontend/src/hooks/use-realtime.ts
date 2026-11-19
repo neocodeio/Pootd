@@ -192,7 +192,7 @@ function resyncQueries(queryClient: QueryClient): void {
     ['follows'],
     ['profile'],
     ['profile-stats'],
-    ['suggested-profiles'],
+    ['top-profiles'],
     ['trending-tags'],
     ['search'],
   ]
@@ -240,7 +240,7 @@ export function useRealtimeSync(): void {
         // profile must refetch as well — including when a third person
         // followed the profile the viewer is reading.
         queryClient.invalidateQueries({ queryKey: ['profile'] })
-        queryClient.invalidateQueries({ queryKey: ['suggested-profiles'] })
+        queryClient.invalidateQueries({ queryKey: ['top-profiles'] })
       }, 150)
     }
 

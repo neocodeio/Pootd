@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/use-auth'
 import { useTheme } from '@/hooks/use-theme'
 import { AppShell } from '@/components/layout/app-shell'
@@ -36,9 +36,6 @@ const SignupPage = lazy(() =>
 const VerifyPage = lazy(() =>
   import('@/pages/verify').then((module) => ({ default: module.VerifyPage })),
 )
-const SearchPage = lazy(() =>
-  import('@/pages/search').then((module) => ({ default: module.SearchPage })),
-)
 const NotificationsPage = lazy(() =>
   import('@/pages/notifications').then((module) => ({
     default: module.NotificationsPage,
@@ -65,6 +62,12 @@ function ScrollToTop() {
   }, [pathname, hash])
 
   return null
+}
+
+/** The old /search page now lives on Explore; keep its links working. */
+function SearchRedirect() {
+  const { search } = useLocation()
+  return <Navigate to={{ pathname: '/explore', search }} replace />
 }
 
 function FullPageFallback() {
@@ -100,7 +103,7 @@ export default function App() {
               <Route element={<AppShell />}>
                 <Route index element={<FeedPage />} />
                 <Route path="explore" element={<ExplorePage />} />
-                <Route path="search" element={<SearchPage />} />
+                <Route path="search" element={<SearchRedirect />} />
                 <Route
                   path="notifications"
                   element={

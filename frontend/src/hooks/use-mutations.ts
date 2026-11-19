@@ -139,7 +139,7 @@ export function useToggleFollow() {
       if (!user) return
       queryClient.invalidateQueries({ queryKey: ['follows'] })
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      queryClient.invalidateQueries({ queryKey: ['suggested-profiles'] })
+      queryClient.invalidateQueries({ queryKey: ['top-profiles'] })
     },
   })
 }

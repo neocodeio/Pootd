@@ -351,15 +351,24 @@ export async function searchProfiles(query: string, limit = 12): Promise<Profile
   return (data ?? []) as Profile[]
 }
 
-export async function getSuggestedProfiles(
-  viewerId: string | undefined,
+/**
+ * Most-followed members for the Explore leaderboard. The viewer is left out so
+ * the list always has room for someone new.
+ */
+export async function getTopProfiles(
   limit = 5,
+  viewerId?: string,
 ): Promise<Profile[]> {
-  const { data, error } = await supabase.rpc('get_suggested_profiles', {
-    viewer_id: viewerId ?? null,
-    profile_limit: limit,
-  })
+  let query = supabase
+    .from('profiles')
+    .select('*')
+    .order('followers_count', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(limit)
 
+  if (viewerId) query = query.neq('id', viewerId)
+
+  const { data, error } = await query
   throwIfError(error)
   return (data ?? []) as Profile[]
 }

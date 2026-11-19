@@ -61,13 +61,13 @@ not "fix" them back without asking:
   and mobile). It is the only approved addition to the reference header; it may
   shift the create button a few pixels. The unread badge is monochrome
   (`bg-foreground text-background`), never `--like` red.
-- **The header nav carries a search link** ("بحث", `Search01Icon`) between
-  استكشف and ملفي, and the mobile bottom bar has five items (الرئيسية، استكشف،
-  أنشئ، بحث، حسابي) with أنشئ still centred. Because the fourth desktop nav
-  item does not fit beside the brand between 640 and 1023px, the desktop chrome
-  (header, footer, `lg:pb-12`, the mobile-bar swap) starts at `lg`. From 1024px
-  up the layout matches the reference exactly; below it the compact mobile
-  header and bottom nav are used.
+- **Search lives on Explore.** The search field and its results are part of the
+  Explore page (`/explore?q=…`); `/search` redirects there with the query
+  intact and the old search page is gone. The header nav is therefore three
+  items (الرئيسية / استكشف / ملفي) and the mobile bottom bar is four
+  (الرئيسية، استكشف، أنشئ، حسابي). The desktop chrome (header, footer,
+  `lg:pb-12`, the mobile-bar swap) still starts at `lg`; below it the compact
+  mobile header and bottom nav are used.
 
 ## Reference layout (approved)
 
@@ -76,7 +76,7 @@ not "fix" them back without asking:
 | Page background | `bg-background` — flat, no gradients, no shadows on the page |
 | Header | `h-16`, `max-w-5xl`, `px-6`, `border-b border-border/80`, `bg-background/80 backdrop-blur-xl` |
 | Header start group (left) | theme toggle → "أنشئ منشور" pill → user avatar (`size-11`) |
-| Header end group (right) | brand lockup → nav (الرئيسية / استكشف / بحث / ملفي) |
+| Header end group (right) | brand lockup → nav (الرئيسية / استكشف / ملفي) |
 | Header nav | `gap-1`; items `h-9 rounded-full px-3.5 py-2 gap-2 text-sm font-medium`, icon `size-4`; active item `bg-secondary` |
 | Brand lockup | wordmark `h-7` (`120×28`) + tagline `مجتمع الأمن السيبراني` at `text-[11px]` with `mt-1`, aligned to the end edge |
 | Create button | `h-10 rounded-full px-5`, primary fill, `PencilEdit02Icon` + "أنشئ منشور" |
@@ -85,6 +85,29 @@ not "fix" them back without asking:
 | Segmented tabs | track `h-8 rounded-full p-[3px] bg-secondary/60`; trigger `rounded-full px-3.5 text-sm`, active `bg-secondary shadow-sm` |
 | Cards | `rounded-2xl border border-border bg-card`, `p-4 sm:p-5` |
 | Footer | hidden below `lg`, single row, `text-xs text-muted-foreground` |
+
+## Explore page (approved)
+
+`pages/explore.tsx` is the search hub and the discovery page at once:
+
+- Search field first (moved off the removed `/search` page): `Input` with a
+  leading `Search01Icon` (`ps-9 pe-11`), a `Loading03Icon` spinner while a
+  request is in flight, a `Cancel01Icon` clear button while there is text, and
+  the term debounced `350ms` into `?q=` so the URL stays shareable and
+  back/forward work. `/search?q=…` redirects to `/explore?q=…`. A term shorter
+  than two characters keeps the discovery view (one character shows the
+  "اكتب حرفين" hint).
+- With an active query it shows member results (`grid gap-2 sm:grid-cols-2` of
+  `Card` rows) above the post results (`PostList`), and a single `EmptyState`
+  when nothing matches.
+- Without a query it shows the discovery stack (`space-y-6`), in this order:
+  1. **الرائج الآن** — `TrendingTags` as a ranked `Card` list (`divide-y` rows:
+     rank number, `#tag` in `text-tag`, `N منشور`, `ChevronLeftIcon`), last 30
+     days, from `get_trending_tags`.
+  2. **أبرز الأعضاء** — `TopUsers` / `useTopProfiles`: profiles ordered by the
+     trigger-maintained `followers_count` (viewer excluded), row = avatar,
+     name + verified badge, `@username · N متابع`, `FollowButton`.
+  3. **منشورات مميزة** — the `top` feed (most liked) through `PostList`.
 
 ## Post card anatomy (approved)
 

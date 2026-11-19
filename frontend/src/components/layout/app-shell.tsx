@@ -3,7 +3,6 @@ import {
   DiscoverCircleIcon,
   Home03Icon,
   PencilEdit02Icon,
-  Search01Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -66,9 +65,6 @@ function DesktopHeader() {
             </HeaderLink>
             <HeaderLink to="/explore" icon={<HugeiconsIcon icon={DiscoverCircleIcon} className="size-4" />}>
               استكشف
-            </HeaderLink>
-            <HeaderLink to="/search" icon={<HugeiconsIcon icon={Search01Icon} className="size-4" />}>
-              بحث
             </HeaderLink>
             {user && profile ? (
               <HeaderLink
