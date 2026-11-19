@@ -16,18 +16,6 @@ Sentry.init({
   dsn: 'https://399d770b98e2a0224ba704c628b5e713@o4512457881288704.ingest.us.sentry.io/4512457892364288',
 })
 
-function ErrorButton() {
-  return (
-    <button
-      onClick={() => {
-        throw new Error('This is your first error!')
-      }}
-    >
-      Break the world
-    </button>
-  )
-}
-
 const FeedPage = lazy(() =>
   import('@/pages/feed').then((module) => ({ default: module.FeedPage })),
 )
@@ -156,7 +144,6 @@ export default function App() {
       </TooltipProvider>
       <Analytics />
       <SpeedInsights />
-      <ErrorButton />
     </BrowserRouter>
   )
 }
