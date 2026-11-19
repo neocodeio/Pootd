@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider } from '@/hooks/use-auth'
-import { Analytics } from "@vercel/analytics/react"
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useTheme } from '@/hooks/use-theme'
 import { AppShell } from '@/components/layout/app-shell'
 import { RequireAuth } from '@/components/require-auth'
@@ -137,6 +138,7 @@ export default function App() {
         </AuthProvider>
       </TooltipProvider>
       <Analytics />
+      <SpeedInsights />
     </BrowserRouter>
   )
 }
