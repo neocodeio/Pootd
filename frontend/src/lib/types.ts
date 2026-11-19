@@ -36,6 +36,19 @@ export interface Notification {
   actor: Profile
 }
 
+export type SocialPlatform =
+  | 'x'
+  | 'github'
+  | 'linkedin'
+  | 'instagram'
+  | 'telegram'
+  | 'youtube'
+
+export interface SocialLink {
+  platform: SocialPlatform
+  url: string
+}
+
 export interface Profile {
   id: string
   username: string
@@ -45,6 +58,7 @@ export interface Profile {
   cover_image_url: string
   website: string
   github: string
+  social_links: SocialLink[]
   /** Maintained by the `follows` triggers — never derived from a fetched list. */
   followers_count: number
   following_count: number
@@ -100,4 +114,5 @@ export interface ProfileUpdate {
   cover_image_url: string
   website: string
   github: string
+  social_links: SocialLink[]
 }

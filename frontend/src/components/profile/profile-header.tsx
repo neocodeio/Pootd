@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
   Calendar01Icon,
-  GithubIcon,
   BriefcaseBusinessIcon,
   Link04Icon,
   Settings01Icon,
@@ -16,8 +15,10 @@ import { FollowList } from '@/components/profile/follow-list'
 import { UserAvatar } from '@/components/user-avatar'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuth } from '@/hooks/use-auth'
 import { formatCount, formatJoined, safeHostname } from '@/lib/format'
+import { parseSocialLinks, SOCIAL_PLATFORMS } from '@/lib/social'
 import { isVerified } from '@/lib/verified'
 import type { Profile, ProfileStats } from '@/lib/types'
 
@@ -76,6 +77,7 @@ export function ProfileHeader({
   // whole graph.
   const followersCount = profile.followers_count ?? 0
   const followingCount = profile.following_count ?? 0
+  const socialLinks = parseSocialLinks(profile.social_links)
 
   async function copyProfileLink() {
     try {
@@ -189,6 +191,33 @@ export function ProfileHeader({
             </p>
           ) : null}
 
+          {socialLinks.length > 0 ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {socialLinks.map((link) => {
+                const config = SOCIAL_PLATFORMS[link.platform]
+
+                return (
+                  <Tooltip key={link.platform}>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        aria-label={config.label}
+                        className="inline-flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                      >
+                        <HugeiconsIcon icon={config.icon} className="size-4" aria-hidden="true" />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={4}>
+                      {config.label}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
+            </div>
+          ) : null}
+
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <HugeiconsIcon icon={Calendar01Icon} className="size-3.5" />
@@ -203,17 +232,6 @@ export function ProfileHeader({
               >
                 <HugeiconsIcon icon={BriefcaseBusinessIcon} className="size-3.5" />
                 {safeHostname(profile.website)}
-              </a>
-            ) : null}
-            {profile.github ? (
-              <a
-                href={profile.github}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-              >
-                <HugeiconsIcon icon={GithubIcon} className="size-3.5" />
-                {safeHostname(profile.github)}
               </a>
             ) : null}
           </div>

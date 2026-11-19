@@ -118,7 +118,9 @@ Rules that must hold:
   its `post-images` object too.
 - Action row: `mt-3 flex items-center gap-0.5`, **no divider**, ghost buttons
   sized `sm`, `h-8 rounded-full px-2.5 text-xs`. Order (start → end):
-  like → comments → bookmark → copy-link.
+  like → comments → bookmark → share. The last button opens the share dialog;
+  the copy-link action lives in the share dialog only (copy pill), not in the
+  `⋯` menu.
 - The like heart turns **red** when liked: `fill-like text-like` on the icon
   only (`--like` token). The count stays `text-muted-foreground`. Never use a
   colour other than `--like` for the heart.
@@ -191,7 +193,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
   overrides it (`strokeWidth={2}` on `CheckmarkBadge02Icon`).
 - Use the semantic name that matches the intent, not the closest glyph:
   `FavouriteIcon` (heart), `Comment01Icon` (comments), `Bookmark01Icon`,
-  `Link04Icon` (copy link), `SentIcon` (publish), `PencilEdit02Icon` (create),
+  `Link04Icon` (copy link), `Share08Icon` (share — opens the share dialog),
+  `SentIcon` (publish), `PencilEdit02Icon` (create),
   `Cancel01Icon` (close/x), `Loading03Icon` (`animate-spin` for pending).
 - Toasts (`components/ui/sonner.tsx`) use `CheckmarkCircle02Icon`,
   `InformationCircleIcon`, `Alert02Icon`, `OctagonXIcon`, `Loading03Icon`.
@@ -227,6 +230,56 @@ in `App.tsx`) reading **«هالحساب موثّق»** — Saudi dialect, ancho
 badge. Do not add a `title` attribute back: it would double up with the tooltip.
 Keep the tooltip monochrome (`bg-foreground text-background`), `text-xs`, and
 never the `--like` red.
+
+## Social accounts
+
+A profile can carry up to three social accounts, rendered **icon-only** under
+the bio (`components/profile/profile-header.tsx`): `size-9 rounded-full border
+border-border` links with a Radix tooltip naming the platform and an
+`aria-label`, `target="_blank"` + `rel="noreferrer noopener"`. Never render the
+account URL or a text link for these.
+
+- Platforms: X, GitHub, LinkedIn, Instagram, Telegram, YouTube — config and URL
+  rules live in `lib/social.ts` (`SOCIAL_PLATFORMS`), icons are Hugeicons.
+- Settings (`pages/settings.tsx`) edits them inside the profile form: up to
+  three rows (leading platform icon, platform select, URL input, remove
+  button), an "إضافة حساب" button disabled at 3 and an `n/3` counter. Changing
+  a row's platform clears its URL.
+- `https` only, each URL must be on the platform's own domain (lookalikes
+  rejected), one entry per platform, three at most — enforced in the frontend
+  and mirrored in the database.
+- Column: `profiles.social_links` jsonb (`[]` default) with
+  `valid_social_links(jsonb)` and `profiles_social_links_check` from
+  `0018_social_links.sql`, which also copies an existing `profiles.github`
+  into the list once. `profiles.github` stays for history but is no longer
+  shown or edited anywhere in the UI.
+
+## Share dialog (approved)
+
+`components/post/share-dialog.tsx` — a post's last action-row button opens it;
+
+- Layout is a fixed three-row column: `DialogHeader` (shrink-0, `px-4 pb-3 pe-12 pt-4`),
+  a scrollable body (`min-h-0 flex-1 overflow-y-auto space-y-3 px-4 pb-4`) and a fixed
+  `DialogFooter` (`shrink-0 flex-row justify-end gap-2 border-t px-4 py-3`). The dialog
+  itself is `flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0` with
+  `rounded-xl`, so it always stays inside the viewport at any height and only the middle
+  section scrolls on very short screens (below ~360px tall). Footer corners are
+  `rounded-b-xl` to match the shell.
+- Quote preview card (author + 2-line excerpt, `rounded-xl border bg-secondary/25 p-2.5`,
+  name `text-[11px]`, excerpt `text-[12.5px] leading-5`).
+- Three monochrome platform buttons in a 3-column grid (one row): X, Telegram, Reddit;
+  `size-9` circles and `text-[11px]` labels so the row fits a 288px dialog. Each opens its
+  web-intent URL (X `intent/post`, `t.me/share`, Reddit submit). WhatsApp, LinkedIn and
+  email were removed from the dialog as requested.
+- Copy-link row (ltr URL + icon-only copy button `aria-label="نسخ رابط المنشور"` that flips
+  to the check icon) — the only copy entry for posts, already inside this dialog (the
+  standalone copy action was removed).
+- Native share sheet via `navigator.share` when supported; the footer is a ghost `إغلاق`
+  plus a compact primary `مشاركة` button (not the long "مشاركة عبر التطبيقات" label, which
+  overflowed narrow phones). Same primitives and design tokens as the report dialog.
+
+Shared text (`lib/share.ts`): `«excerpt» — author (@user) على Pootd`; excerpt
+default 160 chars, word-boundary cut with `…`; title 100 chars for Reddit/email.
 
 ## Radii
 

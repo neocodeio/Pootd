@@ -3,12 +3,14 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight01Icon,
+  Cancel01Icon,
   Delete02Icon,
   Image01Icon,
   Key01Icon,
   Loading03Icon,
   Logout01Icon,
   Mail01Icon,
+  PlusSignIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -32,19 +34,27 @@ import {
 } from '@/hooks/use-mutations'
 import { supabase } from '@/lib/supabase'
 import {
+  MAX_SOCIAL_LINKS,
+  parseSocialLinks,
+  prepareSocialLinks,
+  SOCIAL_PLATFORM_ORDER,
+  SOCIAL_PLATFORMS,
+} from '@/lib/social'
+import {
   isEmail,
   isHttpsUrl,
   normalizeUrl,
   normalizeUsername,
   USERNAME_REGEX,
 } from '@/lib/validation'
+import type { SocialLink, SocialPlatform } from '@/lib/types'
 
 interface FormState {
   displayName: string
   username: string
   bio: string
   website: string
-  github: string
+  socialLinks: SocialLink[]
 }
 
 export function SettingsPage() {
@@ -65,7 +75,7 @@ export function SettingsPage() {
     username: '',
     bio: '',
     website: '',
-    github: '',
+    socialLinks: [],
   })
   const [error, setError] = useState('')
   const [coverPreviewOpen, setCoverPreviewOpen] = useState(false)
@@ -84,7 +94,7 @@ export function SettingsPage() {
         username: profile.username,
         bio: profile.bio,
         website: profile.website,
-        github: profile.github,
+        socialLinks: parseSocialLinks(profile.social_links),
       })
     }
   }, [profile])
@@ -117,7 +127,7 @@ export function SettingsPage() {
     const username = normalizeUsername(form.username)
     const bio = form.bio.trim()
     const website = normalizeUrl(form.website)
-    const github = normalizeUrl(form.github)
+    const social = prepareSocialLinks(form.socialLinks)
 
     if (displayName.length < 1 || displayName.length > 48) {
       setError('الاسم الظاهر لازم يكون من 1 إلى 48 حرفًا.')
@@ -135,8 +145,8 @@ export function SettingsPage() {
       setError('الموقع لازم يكون رابط https:// صحيح.')
       return
     }
-    if (!isHttpsUrl(github)) {
-      setError('GitHub لازم يكون رابط https:// صحيح.')
+    if (social.error) {
+      setError(social.error)
       return
     }
 
@@ -146,7 +156,7 @@ export function SettingsPage() {
         username,
         bio,
         website,
-        github,
+        social_links: social.links,
       },
       {
         onSuccess: (updated) => {
@@ -155,7 +165,7 @@ export function SettingsPage() {
             username: updated.username,
             bio: updated.bio,
             website: updated.website,
-            github: updated.github,
+            socialLinks: parseSocialLinks(updated.social_links),
           })
           toast.success('تم تحديث الملف')
         },
@@ -168,6 +178,46 @@ export function SettingsPage() {
         },
       },
     )
+  }
+
+  function addSocialLink() {
+    setForm((current) => {
+      if (current.socialLinks.length >= MAX_SOCIAL_LINKS) return current
+
+      const used = new Set(current.socialLinks.map((link) => link.platform))
+      const platform = SOCIAL_PLATFORM_ORDER.find((option) => !used.has(option))
+      if (!platform) return current
+
+      return {
+        ...current,
+        socialLinks: [...current.socialLinks, { platform, url: '' }],
+      }
+    })
+  }
+
+  function removeSocialLink(index: number) {
+    setForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.filter((_, position) => position !== index),
+    }))
+  }
+
+  function changeSocialPlatform(index: number, platform: SocialPlatform) {
+    setForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.map((link, position) =>
+        position === index ? { ...link, platform, url: '' } : link,
+      ),
+    }))
+  }
+
+  function changeSocialUrl(index: number, url: string) {
+    setForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.map((link, position) =>
+        position === index ? { ...link, url } : link,
+      ),
+    }))
   }
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -475,34 +525,110 @@ export function SettingsPage() {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="website">الموقع</Label>
-                <Input
-                  id="website"
-                  value={form.website}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, website: event.target.value }))
-                  }
-                  placeholder="https://example.com"
-                  inputMode="url"
-                  dir="ltr"
-                  className="text-start"
-                />
+            <div className="grid gap-2">
+              <Label htmlFor="website">الموقع</Label>
+              <Input
+                id="website"
+                value={form.website}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, website: event.target.value }))
+                }
+                placeholder="https://example.com"
+                inputMode="url"
+                dir="ltr"
+                className="text-start"
+              />
+            </div>
+
+            <div className="grid gap-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <Label>حسابات التواصل</Label>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {form.socialLinks.length}/{MAX_SOCIAL_LINKS}
+                </span>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="github">GitHub</Label>
-                <Input
-                  id="github"
-                  value={form.github}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, github: event.target.value }))
-                  }
-                  placeholder="https://github.com/you"
-                  inputMode="url"
-                  dir="ltr"
-                  className="text-start"
-                />
+
+              {form.socialLinks.length > 0 ? (
+                <div className="grid gap-2">
+                  {form.socialLinks.map((link, index) => {
+                    const config = SOCIAL_PLATFORMS[link.platform]
+                    const used = new Set(form.socialLinks.map((row) => row.platform))
+
+                    return (
+                      <div
+                        key={index}
+                        className="rounded-xl border border-border bg-secondary/20 p-2.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground"
+                            aria-hidden="true"
+                          >
+                            <HugeiconsIcon icon={config.icon} className="size-4" />
+                          </span>
+                          <select
+                            value={link.platform}
+                            onChange={(event) =>
+                              changeSocialPlatform(
+                                index,
+                                event.target.value as SocialPlatform,
+                              )
+                            }
+                            aria-label={`المنصة للحساب ${index + 1}`}
+                            className="h-8 max-w-[12rem] min-w-0 cursor-pointer truncate rounded-lg bg-transparent px-1 text-sm font-medium text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                          >
+                            {SOCIAL_PLATFORM_ORDER.map((platform) => (
+                              <option
+                                key={platform}
+                                value={platform}
+                                disabled={
+                                  platform !== link.platform && used.has(platform)
+                                }
+                              >
+                                {SOCIAL_PLATFORMS[platform].label}
+                              </option>
+                            ))}
+                          </select>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => removeSocialLink(index)}
+                            aria-label={`حذف حساب ${config.label}`}
+                            className="ms-auto rounded-full text-muted-foreground hover:text-foreground"
+                          >
+                            <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+                          </Button>
+                        </div>
+                        <Input
+                          value={link.url}
+                          onChange={(event) => changeSocialUrl(index, event.target.value)}
+                          placeholder={config.placeholder}
+                          inputMode="url"
+                          dir="ltr"
+                          aria-label={`رابط ${config.label}`}
+                          className="mt-2 h-9 text-start"
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSocialLink}
+                  disabled={form.socialLinks.length >= MAX_SOCIAL_LINKS}
+                >
+                  <HugeiconsIcon icon={PlusSignIcon} />
+                  إضافة حساب
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  حتى {MAX_SOCIAL_LINKS} حسابات فقط، وتظهر كأيقونات في ملفك.
+                </span>
               </div>
             </div>
 

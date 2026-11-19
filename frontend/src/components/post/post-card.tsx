@@ -5,11 +5,11 @@ import {
   Comment01Icon,
   Delete02Icon,
   Flag01Icon,
-  Link04Icon,
   Loading03Icon,
   MoreHorizontalIcon,
   PencilEdit01Icon,
   SaveIcon,
+  Share08Icon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -19,6 +19,7 @@ import { ImagePreview } from '@/components/image-preview'
 import { BookmarkButton } from '@/components/post/bookmark-button'
 import { LikeButton } from '@/components/post/like-button'
 import { PostContent } from '@/components/post/post-content'
+import { ShareDialog } from '@/components/post/share-dialog'
 import { ReportDialog } from '@/components/report-dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { VerifiedBadge } from '@/components/verified-badge'
@@ -61,6 +62,7 @@ export function PostCard({
   const updatePost = useUpdatePost()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [imageOpen, setImageOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftContent, setDraftContent] = useState(post.content)
@@ -69,15 +71,6 @@ export function PostCard({
   const shouldClamp =
     !detail && (post.content.length > 600 || post.content.split('\n').length > 10)
   const wasEdited = post.updated_at !== post.created_at
-
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/p/${post.id}`)
-      toast.success('تم نسخ الرابط')
-    } catch {
-      toast.error('تعذّر نسخ الرابط.')
-    }
-  }
 
   function handleDelete() {
     deletePost.mutate(
@@ -246,9 +239,9 @@ export function PostCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onSelect={() => void copyLink()}>
-                  <HugeiconsIcon icon={Link04Icon} />
-                  نسخ الرابط
+                <DropdownMenuItem onSelect={() => setShareOpen(true)}>
+                  <HugeiconsIcon icon={Share08Icon} />
+                  مشاركة المنشور
                 </DropdownMenuItem>
                 {isAuthor ? (
                   <>
@@ -332,11 +325,11 @@ export function PostCard({
               type="button"
               variant="ghost"
               size="icon-sm"
-              onClick={() => void copyLink()}
-              aria-label="نسخ رابط المنشور"
+              onClick={() => setShareOpen(true)}
+              aria-label="مشاركة المنشور"
               className="rounded-full text-muted-foreground hover:text-foreground"
             >
-              <HugeiconsIcon icon={Link04Icon} className="size-4" />
+              <HugeiconsIcon icon={Share08Icon} className="size-4" />
             </Button>
           </div>
         </div>
@@ -360,6 +353,8 @@ export function PostCard({
       />
 
       <ReportDialog open={reportOpen} onOpenChange={setReportOpen} postId={post.id} />
+
+      <ShareDialog open={shareOpen} onOpenChange={setShareOpen} post={post} />
     </Card>
   )
 }
