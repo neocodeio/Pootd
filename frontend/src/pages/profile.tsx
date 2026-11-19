@@ -166,7 +166,9 @@ export function ProfilePage() {
           onRetry={() => void postsQuery.refetch()}
           hasMore={postsQuery.hasNextPage}
           isLoadingMore={postsQuery.isFetchingNextPage}
+          loadError={postsQuery.isFetchNextPageError}
           onLoadMore={() => void postsQuery.fetchNextPage()}
+          excludeMuted={false}
           emptyTitle={isOwn ? 'ما نشرت شي بعد' : 'ما فيه منشورات بعد'}
           emptyDescription={
             isOwn
@@ -191,7 +193,9 @@ export function ProfilePage() {
           onRetry={() => void likedPostsQuery.refetch()}
           hasMore={likedPostsQuery.hasNextPage}
           isLoadingMore={likedPostsQuery.isFetchingNextPage}
+          loadError={likedPostsQuery.isFetchNextPageError}
           onLoadMore={() => void likedPostsQuery.fetchNextPage()}
+          excludeMuted={false}
           emptyTitle={isOwn ? 'ما أعجبت بشي بعد' : 'ما فيه إعجابات بعد'}
           emptyDescription={
             isOwn
@@ -209,7 +213,9 @@ export function ProfilePage() {
           onRetry={() => void savedQuery.refetch()}
           hasMore={savedQuery.hasNextPage}
           isLoadingMore={savedQuery.isFetchingNextPage}
+          loadError={savedQuery.isFetchNextPageError}
           onLoadMore={() => void savedQuery.fetchNextPage()}
+          excludeMuted={false}
           emptyTitle="ما فيه منشورات محفوظة"
           emptyDescription="احفظ المنشورات المهمة من زر الحفظ، وتلقاها هنا."
           emptyAction={

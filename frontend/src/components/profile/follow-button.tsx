@@ -5,7 +5,13 @@ import { useAuth } from '@/hooks/use-auth'
 import { useFollowState } from '@/hooks/use-pootd'
 import { useToggleFollow } from '@/hooks/use-mutations'
 
-export function FollowButton({ targetUserId }: { targetUserId: string }) {
+export function FollowButton({
+  targetUserId,
+  onFollowed,
+}: {
+  targetUserId: string
+  onFollowed?: (following: boolean) => void
+}) {
   const { user } = useAuth()
   const { data: following = false, isLoading } = useFollowState(user?.id, targetUserId)
   const { mutate: toggleFollow, isPending } = useToggleFollow()
@@ -20,7 +26,11 @@ export function FollowButton({ targetUserId }: { targetUserId: string }) {
       variant={isFollowing ? 'outline' : 'default'}
       size="sm"
       disabled={isPending || isLoading}
-      onClick={() => void toggleFollow(targetUserId)}
+      onClick={() =>
+        toggleFollow(targetUserId, {
+          onSuccess: (nowFollowing) => onFollowed?.(nowFollowing),
+        })
+      }
     >
       {isFollowing ? (
         <HugeiconsIcon icon={UserCheck01Icon} />

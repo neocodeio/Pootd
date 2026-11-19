@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { Loading03Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -6,7 +7,12 @@ import { PostCard } from '@/components/post/post-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useMutedIds } from '@/hooks/use-pootd'
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
 import type { PostWithAuthor } from '@/lib/types'
+
+/** Below this many posts the manual button stays visible as a fallback. */
+const SHORT_LIST = 5
 
 function PostSkeleton() {
   return (
@@ -36,7 +42,9 @@ export function PostList({
   onRetry,
   hasMore = false,
   isLoadingMore = false,
+  loadError = false,
   onLoadMore,
+  excludeMuted = true,
 }: {
   posts: PostWithAuthor[] | undefined
   isLoading: boolean
@@ -49,8 +57,27 @@ export function PostList({
   onRetry?: () => void
   hasMore?: boolean
   isLoadingMore?: boolean
+  loadError?: boolean
   onLoadMore?: () => void
+  excludeMuted?: boolean
 }) {
+  const mutedIds = useMutedIds()
+  const muted = useMemo(
+    () => new Set(excludeMuted ? (mutedIds.data ?? []) : []),
+    [excludeMuted, mutedIds.data],
+  )
+  const visiblePosts = useMemo(
+    () => (posts ?? []).filter((post) => !muted.has(post.author_id)),
+    [posts, muted],
+  )
+
+  const { sentinelRef, autoLoad } = useInfiniteScroll({
+    hasMore: hasMore && Boolean(onLoadMore),
+    isLoading: isLoadingMore,
+    hasError: loadError,
+    onLoadMore: onLoadMore ?? (() => {}),
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -77,7 +104,7 @@ export function PostList({
     )
   }
 
-  if (!posts || posts.length === 0) {
+  if (visiblePosts.length === 0) {
     return (
       <EmptyState
         title={emptyTitle}
@@ -90,9 +117,15 @@ export function PostList({
   const liked = new Set(likedIds ?? [])
   const bookmarked = new Set(bookmarkedIds ?? [])
 
+  // Auto-load covers long lists; the button remains for short lists, browsers
+  // without IntersectionObserver, and a failed page request.
+  const showManualLoad =
+    Boolean(hasMore && onLoadMore) &&
+    (!autoLoad || loadError || visiblePosts.length < SHORT_LIST)
+
   return (
     <div className="space-y-3">
-      {posts.map((post) => (
+      {visiblePosts.map((post) => (
         <PostCard
           key={post.id}
           post={post}
@@ -102,20 +135,33 @@ export function PostList({
       ))}
 
       {hasMore && onLoadMore ? (
-        <div className="flex justify-center pt-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onLoadMore}
-            disabled={isLoadingMore}
-            className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
-          >
-            {isLoadingMore ? (
-              <HugeiconsIcon icon={Loading03Icon} className="animate-spin" />
-            ) : null}
-            حمّل المزيد
-          </Button>
+        <div className="pt-1">
+          <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" />
+          {isLoadingMore ? (
+            <p
+              role="status"
+              className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground"
+            >
+              <HugeiconsIcon
+                icon={Loading03Icon}
+                className="size-3.5 animate-spin"
+                aria-hidden="true"
+              />
+              جارٍ تحميل المزيد…
+            </p>
+          ) : showManualLoad ? (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onLoadMore}
+                className="rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
+              >
+                حمّل المزيد
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

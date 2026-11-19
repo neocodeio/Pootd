@@ -24,6 +24,16 @@ const queryClient = new QueryClient({
   },
 })
 
+// Installable PWA in production builds only: the dev server has no sw.js and a
+// service worker there would cache HMR responses.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Registration is best-effort; the app works without it.
+    })
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Direction.DirectionProvider dir="rtl">

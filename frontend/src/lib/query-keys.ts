@@ -18,8 +18,11 @@ export const queryKeys = {
   bookmarkedIds: (userId: string, idsKey: string) => ['bookmarked-ids', userId, idsKey] as const,
   bookmarkedPosts: (userId: string) => ['bookmarked-posts', userId] as const,
   bookmarkedPostsCount: (userId: string) => ['bookmarked-posts-count', userId] as const,
-  notifications: (userId: string) => ['notifications', userId] as const,
-  notificationsUnread: (userId: string) => ['notifications-unread', userId] as const,
+  notifications: (userId: string, mutedKey = '') => ['notifications', userId, mutedKey] as const,
+  notificationsUnread: (userId: string, mutedKey = '') =>
+    ['notifications-unread', userId, mutedKey] as const,
+  mutedIds: (userId: string) => ['mutes', userId] as const,
+  mutedProfiles: (userId: string) => ['mutes', userId, 'profiles'] as const,
   follows: (userId: string, kind: 'followers' | 'following') => ['follows', userId, kind] as const,
   followsState: (userId: string, targetUserId: string) => ['follows', userId, 'state', targetUserId] as const,
 }

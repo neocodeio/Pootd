@@ -304,6 +304,108 @@ account URL or a text link for these.
 Shared text (`lib/share.ts`): `«excerpt» — author (@user) على Pootd`; excerpt
 default 160 chars, word-boundary cut with `…`; title 100 chars for Reddit/email.
 
+## Infinite scroll (approved)
+
+`components/post/post-list.tsx` + `hooks/use-infinite-scroll.ts` — long threads
+load the next page from an `IntersectionObserver` sentinel (`rootMargin 600px`),
+not from the button. The observer is rebuilt after every settled page because an
+intersection is only reported when it changes, and it is detached while a request
+is in flight so a failure cannot retry itself. The "حمّل المزيد" pill stays as
+the fallback when the browser has no `IntersectionObserver`, a page request
+failed (`loadError={…isFetchNextPageError}`), or fewer than five posts are
+visible. The loading line uses `role="status"`. Notifications use the same hook.
+
+## Notifications (approved)
+
+`pages/notifications.tsx` is a four-tab list: **الكل / الإشارات / المتابعات /
+الإعجابات** — full-width segmented track, same pills as the feed tabs. `الكل` is
+the default so `comment` notifications still have a home; الإشارات covers
+`mention` + `reply`, المتابعات `follow`, الإعجابات `like`. Filters live in
+`lib/notifications.ts` (`matchesFilter`), the URL is not involved.
+
+Likes on the same post collapse into one row: `groupNotifications` keeps the
+newest position and the row shows up to three stacked avatars (`-ms-2`,
+`ring-2 ring-card`) plus a `+N` bubble, the Arabic plural (`likesSummary`:
+شخصان / N أشخاص / N شخصًا) and one unread dot for the whole group. Opening a
+group marks every like in it read in one request (`markNotificationsRead`);
+single rows still mark themselves. Muted actors never reach the page or the
+unread badge — the queries filter `actor_id` server-side.
+
+## Mutes (approved)
+
+A mute is private and one-way: the muter stops seeing the muted member's posts
+in the feed, tag pages, Explore and Search, their comments-free surfaces, and
+their notifications; the muted member is not told and can still follow/read the
+muter. Not a block — real blocking would need RLS changes on `posts`/`comments`.
+
+- Table/RLS: `backend/supabase/migrations/0019_mutes.sql` (`mutes(muter_id,
+  muted_id)`, every policy scoped to `auth.uid() = muter_id`, `anon` revoked).
+  The owner runs it in the Supabase SQL editor.
+- Entry point: the `⋯` menu on someone else's post → "كتم @user", with a sonner
+  toast whose **تراجع** action unmutes. Settings gains **الحسابات المكتومة**
+  (`components/profile/muted-accounts.tsx`) listing the muted profiles with an
+  "إلغاء الكتم" pill.
+- Filtering: `PostList` drops muted authors client-side (`excludeMuted`, default
+  true; profile tabs pass `excludeMuted={false}` so a profile still shows its own
+  content). `TopUsers` and Explore member results filter the same ids.
+  Notifications and the unread count filter server-side with
+  `.not('actor_id', 'in', …)`.
+- Data lives in `lib/api.ts` (`getMutedIds`, `getMutedProfiles`, `muteProfile`,
+  `unmuteProfile`) with `useMutedIds` / `useMutedProfiles` and
+  `useMuteProfile` / `useUnmuteProfile`; a mute invalidates feed, search,
+  notifications, top profiles and the saved/liked lists.
+
+## @mention autocomplete (approved)
+
+`lib/mentions.ts` mirrors the renderer rule — `@` after a non-word boundary and
+only `[A-Za-z0-9_]{0,24}`, so `name@example.com` never opens the list. The
+composer and the comment form use `hooks/use-mention-autocomplete.ts`:
+
+- Typing `@` (or `@am`) shows up to six profiles from `searchProfiles` (min
+  length 1) in an **inline** listbox (`components/post/mention-suggestions.tsx`)
+  under the textarea — not a portal, so the composer card never clips it.
+- ↑/↓ move, Enter/Tab insert, Escape dismisses; the chosen `@username` replaces
+  the fragment and the caret lands after it (one space added only when needed).
+  Clicking an option keeps the textarea focused (`onMouseDown` preventDefault).
+- The textarea carries `role="combobox"` + `aria-autocomplete="list"` /
+  `aria-expanded` / `aria-controls` / `aria-activedescendant`; the list is
+  `role="listbox"` with `role="option"` rows.
+
+## Onboarding (approved)
+
+`components/onboarding/follow-step.tsx`, mounted once in `AppShell`. It opens
+only for a signed-in profile with `following_count === 0` that has not dismissed
+it before (`localStorage` key `pootd-onboarding:<userId>`) and only when at
+least one candidate exists, so existing members are never interrupted.
+Candidates are `useTopProfiles` (self and muted members removed), each row is the
+same compact avatar/name/count layout as TopUsers with `FollowButton`
+(`onFollowed` callback feeds the local progress). Goal `min(3, candidates)`:
+the footer shows `n من goal متابعين`, the primary "ابدأ التصفّح" enables at the
+goal, and "لاحقًا" closes it (either way the flag is stored). The dialog is the
+usual `max-h-[calc(100dvh-2rem)]` flex column with only the list scrolling.
+
+## PWA (approved)
+
+Installable, offline shell, no new dependency:
+
+- `public/manifest.webmanifest` — Arabic name/description, `dir: rtl`,
+  standalone, `start_url`/`scope` `/`, near-black theme, `pwa-192`/`pwa-512` any
+  plus `pwa-maskable-512` maskable icons (all generated from
+  `pootd_icon_black.png`).
+- `public/sw.js` — `VERSION` placeholder stamped by the `pootd-sw-version` Vite
+  plugin in `vite.config.ts` (`closeBundle` rewrites `dist/sw.js`), so each
+  deploy gets new `pootd-*` caches and old ones are deleted on activate.
+  Navigations are network-first with `/index.html` as the offline fallback;
+  hashed `/assets/*` are precached from the cached `index.html` during install
+  (then cache-first), so the offline shell boots with its JS/CSS; same-origin
+  images/manifest are stale-while-revalidate; Supabase REST/storage requests are
+  never touched.
+- `src/main.tsx` registers `/sw.js` on `load` **only** in a production build
+  (`import.meta.env.PROD`), so dev/HMR is unaffected.
+- `index.html` carries `rel="manifest"`, `apple-touch-icon` at 180, the
+  apple-mobile-web-app metas and **two** `theme-color` metas (light `#ffffff`,
+  dark `#0d0d0d`) selected by `prefers-color-scheme`.
+
 ## Radii
 
 - Cards: `rounded-2xl` (18px) — composer, post cards, dialogs.

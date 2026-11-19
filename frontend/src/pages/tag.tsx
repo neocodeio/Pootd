@@ -44,6 +44,7 @@ export function TagPage() {
         onRetry={() => void feed.refetch()}
         hasMore={feed.hasNextPage}
         isLoadingMore={feed.isFetchingNextPage}
+        loadError={feed.isFetchNextPageError}
         onLoadMore={() => void feed.fetchNextPage()}
         emptyTitle={`ما فيه منشورات بوسم #${normalizedTag}`}
         emptyDescription="كن أول من ينشر عن هذا الموضوع."

@@ -10,6 +10,7 @@ import {
   PencilEdit01Icon,
   SaveIcon,
   Share08Icon,
+  UserBlock01Icon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -35,7 +36,12 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/hooks/use-auth'
-import { useDeletePost, useUpdatePost } from '@/hooks/use-mutations'
+import {
+  useDeletePost,
+  useMuteProfile,
+  useUnmuteProfile,
+  useUpdatePost,
+} from '@/hooks/use-mutations'
 import { timeAgo } from '@/lib/format'
 import { extractTags } from '@/lib/validation'
 import { isVerified } from '@/lib/verified'
@@ -60,6 +66,8 @@ export function PostCard({
   const location = useLocation()
   const deletePost = useDeletePost()
   const updatePost = useUpdatePost()
+  const muteProfile = useMuteProfile()
+  const unmuteProfile = useUnmuteProfile()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -89,6 +97,24 @@ export function PostCard({
   function startEditing() {
     setDraftContent(post.content)
     setEditing(true)
+  }
+
+  /** Private one-way mute — the author is never told. Undo for 8 seconds. */
+  function handleMute() {
+    if (!user || isAuthor) return
+
+    muteProfile.mutate(post.author_id, {
+      onSuccess: () => {
+        toast(`تم كتم @${post.author.username}`, {
+          description: 'ما راح تشوف منشوراته في الرئيسية واستكشف.',
+          action: {
+            label: 'تراجع',
+            onClick: () => unmuteProfile.mutate(post.author_id),
+          },
+        })
+      },
+      onError: (error) => toast.error(error.message),
+    })
   }
 
   function cancelEditing() {
@@ -264,6 +290,13 @@ export function PostCard({
                     <DropdownMenuItem onSelect={() => setReportOpen(true)}>
                       <HugeiconsIcon icon={Flag01Icon} />
                       الإبلاغ عن المنشور
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={handleMute}
+                      disabled={muteProfile.isPending}
+                    >
+                      <HugeiconsIcon icon={UserBlock01Icon} />
+                      كتم @{post.author.username}
                     </DropdownMenuItem>
                   </>
                 ) : null}

@@ -21,6 +21,7 @@ import {
   useBookmarkedPostIds,
   useFeed,
   useLikedPostIds,
+  useMutedIds,
   useSearchPosts,
   useSearchProfiles,
 } from '@/hooks/use-pootd'
@@ -180,6 +181,7 @@ function ExploreFeed() {
           onRetry={() => void feed.refetch()}
           hasMore={feed.hasNextPage}
           isLoadingMore={feed.isFetchingNextPage}
+          loadError={feed.isFetchNextPageError}
           onLoadMore={() => void feed.fetchNextPage()}
           emptyTitle="ما فيه منشورات مميزة بعد"
           emptyDescription="تظهر المنشورات الأعلى هنا بعد ما يبدأ المجتمع بالتفاعل."
@@ -205,7 +207,10 @@ function SearchResults({
   )
   const likedIds = useLikedPostIds(postIds)
   const bookmarkedIds = useBookmarkedPostIds(postIds)
-  const profiles = profilesQuery.data ?? []
+  const mutedIds = useMutedIds()
+  const profiles = (profilesQuery.data ?? []).filter(
+    (profile) => !(mutedIds.data ?? []).includes(profile.id),
+  )
 
   const isLoading = postsQuery.isLoading || profilesQuery.isLoading
   const nothingFound =
@@ -272,6 +277,7 @@ function SearchResults({
           onRetry={() => void postsQuery.refetch()}
           hasMore={postsQuery.hasNextPage}
           isLoadingMore={postsQuery.isFetchingNextPage}
+          loadError={postsQuery.isFetchNextPageError}
           onLoadMore={() => void postsQuery.fetchNextPage()}
           emptyTitle="ما فيه منشورات"
           emptyDescription="ما لقينا منشورات تطابق بحثك."

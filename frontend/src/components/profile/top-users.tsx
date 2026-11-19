@@ -4,7 +4,7 @@ import { UserAvatar } from '@/components/user-avatar'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useTopProfiles } from '@/hooks/use-pootd'
+import { useMutedIds, useTopProfiles } from '@/hooks/use-pootd'
 import { formatCount } from '@/lib/format'
 import { isVerified } from '@/lib/verified'
 
@@ -14,6 +14,11 @@ import { isVerified } from '@/lib/verified'
  */
 export function TopUsers({ limit = 5 }: { limit?: number }) {
   const { data, isLoading, error } = useTopProfiles(limit)
+  const mutedIds = useMutedIds()
+  // Muted members stay out of the leaderboard, like everywhere else.
+  const members = (data ?? []).filter(
+    (profile) => !(mutedIds.data ?? []).includes(profile.id),
+  )
 
   return (
     <section aria-labelledby="top-users-heading">
@@ -40,12 +45,12 @@ export function TopUsers({ limit = 5 }: { limit?: number }) {
           <p className="p-4 text-sm text-muted-foreground">
             تعذّر تحميل الأعضاء البارزين.
           </p>
-        ) : (data?.length ?? 0) === 0 ? (
+        ) : members.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">
             ما فيه أعضاء بعد. أول من ينضم ياخذ الصدارة.
           </p>
         ) : (
-          data?.map((profile) => (
+          members.map((profile) => (
             <div key={profile.id} className="flex items-center gap-3 p-3.5 sm:px-5">
               <Link
                 to={`/u/${profile.username}`}

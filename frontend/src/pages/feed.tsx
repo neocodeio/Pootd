@@ -50,6 +50,7 @@ export function FeedPage() {
         onRetry={() => void feed.refetch()}
         hasMore={feed.hasNextPage}
         isLoadingMore={feed.isFetchingNextPage}
+        loadError={feed.isFetchNextPageError}
         onLoadMore={() => void feed.fetchNextPage()}
         emptyTitle={sort === 'top' ? 'ما فيه منشورات أعلى بعد' : 'ما فيه منشورات بعد'}
         emptyDescription={

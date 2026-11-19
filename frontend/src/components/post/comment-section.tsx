@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PostContent } from '@/components/post/post-content'
+import { MentionSuggestions } from '@/components/post/mention-suggestions'
 import { ReportDialog } from '@/components/report-dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { VerifiedBadge } from '@/components/verified-badge'
@@ -20,6 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/hooks/use-auth'
+import { useMentionAutocomplete } from '@/hooks/use-mention-autocomplete'
 import { useCreateComment, useDeleteComment } from '@/hooks/use-mutations'
 import { useComments } from '@/hooks/use-pootd'
 import { useRealtimeComments } from '@/hooks/use-realtime'
@@ -50,6 +52,11 @@ export function CommentSection({
   const [reportTarget, setReportTarget] = useState<CommentWithAuthor | null>(null)
   const [replyTo, setReplyTo] = useState<CommentWithAuthor | null>(null)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
+  const mention = useMentionAutocomplete({
+    value: content,
+    onChange: setContent,
+    textareaRef: commentInputRef,
+  })
 
   const comments = flattenPages(data)
   const canSubmit = content.trim().length > 0 && !createComment.isPending
@@ -134,18 +141,36 @@ export function CommentSection({
                 id="comment-input"
                 ref={commentInputRef}
                 value={content}
-                onChange={(event) => setContent(event.target.value)}
+                onChange={(event) => {
+                  setContent(event.target.value)
+                  mention.syncCaret()
+                }}
+                onSelect={mention.syncCaret}
+                onClick={mention.syncCaret}
+                onKeyUp={mention.syncCaret}
+                onBlur={mention.dismiss}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
                     event.preventDefault()
                     submit()
+                    return
                   }
+                  mention.handleKeyDown(event)
                 }}
+                {...mention.controlProps}
                 placeholder={replyTo ? `اكتب ردًا على @${replyTo.author.username}…` : 'أضف تعليقًا…'}
                 rows={2}
                 maxLength={MAX_COMMENT_LENGTH}
                 dir="auto"
                 className="min-h-0 resize-none border-0 bg-transparent p-0 text-sm leading-7 shadow-none focus-visible:ring-0"
+              />
+              <MentionSuggestions
+                open={mention.open}
+                options={mention.options}
+                activeIndex={mention.activeIndex}
+                listboxId={mention.listboxId}
+                onHover={mention.setActiveIndex}
+                onSelect={mention.select}
               />
               <div className="mt-1 flex items-center justify-between gap-2">
                 <span className="text-[11px] tabular-nums text-muted-foreground">

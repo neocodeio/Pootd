@@ -336,9 +336,14 @@ export async function searchPosts(
   return toPage((data ?? []) as unknown as PostWithAuthor[], limit, cursorOf)
 }
 
-export async function searchProfiles(query: string, limit = 12): Promise<Profile[]> {
+export async function searchProfiles(
+  query: string,
+  options: { limit?: number; minLength?: number } = {},
+): Promise<Profile[]> {
+  const limit = options.limit ?? 12
+  const minLength = options.minLength ?? 2
   const term = normalizeSearchTerm(query)
-  if (term.length < 2) return []
+  if (term.length < minLength) return []
 
   const { data, error } = await supabase
     .from('profiles')
@@ -573,6 +578,61 @@ export async function toggleFollow(
   return true
 }
 
+/** PostgREST list literal: `(a,b,c)`. Only called with ids we already hold. */
+function idList(ids: string[]): string {
+  return `(${ids.join(',')})`
+}
+
+/** Muted profile ids. Mutes are private: a row is only readable by its owner. */
+export async function getMutedIds(userId: string): Promise<string[]> {
+  if (!userId) return []
+
+  const { data, error } = await supabase
+    .from('mutes')
+    .select('muted_id')
+    .eq('muter_id', userId)
+
+  throwIfError(error)
+  return ((data ?? []) as { muted_id: string }[]).map((row) => row.muted_id)
+}
+
+/** The muted profiles themselves, newest mute first (Settings list). */
+export async function getMutedProfiles(userId: string): Promise<Profile[]> {
+  if (!userId) return []
+
+  const { data, error } = await supabase
+    .from('mutes')
+    .select('muted:profiles!mutes_muted_id_fkey(*)')
+    .eq('muter_id', userId)
+    .order('created_at', { ascending: false })
+
+  throwIfError(error)
+  return ((data ?? []) as unknown as { muted: Profile | null }[])
+    .map((row) => row.muted)
+    .filter((profile): profile is Profile => Boolean(profile))
+}
+
+export async function muteProfile(muterId: string, mutedId: string): Promise<void> {
+  const { error } = await supabase
+    .from('mutes')
+    .upsert(
+      { muter_id: muterId, muted_id: mutedId },
+      { onConflict: 'muter_id,muted_id', ignoreDuplicates: true },
+    )
+
+  throwIfError(error)
+}
+
+export async function unmuteProfile(muterId: string, mutedId: string): Promise<void> {
+  const { error } = await supabase
+    .from('mutes')
+    .delete()
+    .eq('muter_id', muterId)
+    .eq('muted_id', mutedId)
+
+  throwIfError(error)
+}
+
 export async function getTrendingTags(limit = 8): Promise<TrendingTag[]> {
   const { data, error } = await supabase.rpc('get_trending_tags', {
     tag_limit: limit,
@@ -781,10 +841,11 @@ export async function getBookmarkedPostsCount(userId: string): Promise<number> {
 
 export async function getNotifications(
   userId: string,
-  options: { limit?: number; cursor?: Cursor | null } = {},
+  options: { limit?: number; cursor?: Cursor | null; mutedIds?: string[] } = {},
 ): Promise<Page<Notification>> {
   const limit = options.limit ?? NOTIFICATION_PAGE_SIZE
   const cursor = options.cursor ?? null
+  const mutedIds = options.mutedIds ?? []
 
   let query = supabase
     .from('notifications')
@@ -793,6 +854,10 @@ export async function getNotifications(
     )
     .eq('recipient_id', userId)
     .limit(limit + 1)
+
+  if (mutedIds.length > 0) {
+    query = query.not('actor_id', 'in', idList(mutedIds))
+  }
 
   if (cursor) {
     const at = toIso(cursor.created_at)
@@ -807,14 +872,23 @@ export async function getNotifications(
   return toPage((data ?? []) as unknown as Notification[], limit, cursorOf)
 }
 
-export async function getUnreadNotificationCount(userId: string): Promise<number> {
+export async function getUnreadNotificationCount(
+  userId: string,
+  mutedIds: string[] = [],
+): Promise<number> {
   if (!userId) return 0
 
-  const { count, error } = await supabase
+  let query = supabase
     .from('notifications')
     .select('id', { count: 'exact', head: true })
     .eq('recipient_id', userId)
     .is('read_at', null)
+
+  if (mutedIds.length > 0) {
+    query = query.not('actor_id', 'in', idList(mutedIds))
+  }
+
+  const { count, error } = await query
 
   throwIfError(error)
   return count ?? 0
@@ -825,6 +899,19 @@ export async function markNotificationRead(notificationId: string): Promise<void
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
     .eq('id', notificationId)
+    .is('read_at', null)
+
+  throwIfError(error)
+}
+
+/** Marks a batch read at once — used when a liked-by group is opened. */
+export async function markNotificationsRead(notificationIds: string[]): Promise<void> {
+  if (notificationIds.length === 0) return
+
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .in('id', notificationIds)
     .is('read_at', null)
 
   throwIfError(error)

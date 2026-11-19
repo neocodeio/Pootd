@@ -10,6 +10,8 @@ import {
   getLikedPostIds,
   getLikedPosts,
   getLikedPostsCount,
+  getMutedIds,
+  getMutedProfiles,
   getNotifications,
   getPost,
   getProfileByUsername,
@@ -126,12 +128,13 @@ export function useProfileStats(userId: string | undefined) {
   })
 }
 
-export function useTopProfiles(limit = 5) {
+export function useTopProfiles(limit = 5, enabled = true) {
   const { user } = useAuth()
 
   return useQuery({
     queryKey: queryKeys.topProfiles(user?.id ?? 'anon', limit),
     queryFn: () => getTopProfiles(limit, user?.id),
+    enabled,
     staleTime: 60_000,
   })
 }
@@ -184,8 +187,42 @@ export function useSearchPosts(query: string) {
 export function useSearchProfiles(query: string) {
   return useQuery({
     queryKey: queryKeys.searchProfiles(query),
-    queryFn: () => searchProfiles(query, 12),
+    queryFn: () => searchProfiles(query, { limit: 12 }),
     enabled: query.trim().length >= 2,
+    staleTime: 60_000,
+  })
+}
+
+/** Typeahead for `@mentions`: matches from the first character. */
+export function useMentionCandidates(query: string) {
+  const term = query.trim()
+
+  return useQuery({
+    queryKey: [...queryKeys.searchProfiles(term), 'mentions'] as const,
+    queryFn: () => searchProfiles(term, { limit: 6, minLength: 1 }),
+    enabled: term.length >= 1,
+    staleTime: 60_000,
+  })
+}
+
+export function useMutedIds() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: queryKeys.mutedIds(user?.id ?? 'anon'),
+    queryFn: () => getMutedIds(user?.id ?? ''),
+    enabled: Boolean(user),
+    staleTime: 60_000,
+  })
+}
+
+export function useMutedProfiles() {
+  const { user } = useAuth()
+
+  return useQuery({
+    queryKey: queryKeys.mutedProfiles(user?.id ?? 'anon'),
+    queryFn: () => getMutedProfiles(user?.id ?? ''),
+    enabled: Boolean(user),
     staleTime: 60_000,
   })
 }
@@ -224,24 +261,34 @@ export function useBookmarkedPostsCount(userId: string | undefined) {
 
 export function useNotifications() {
   const { user } = useAuth()
+  const mutedIds = useMutedIds()
+  const mutedKey = [...(mutedIds.data ?? [])].sort().join(',')
 
   return useInfiniteQuery({
-    queryKey: queryKeys.notifications(user?.id ?? 'anon'),
-    queryFn: ({ pageParam }) => getNotifications(user?.id ?? '', { cursor: pageParam }),
+    queryKey: queryKeys.notifications(user?.id ?? 'anon', mutedKey),
+    queryFn: ({ pageParam }) =>
+      getNotifications(user?.id ?? '', {
+        cursor: pageParam,
+        mutedIds: mutedIds.data ?? [],
+      }),
     initialPageParam: null as Cursor | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    enabled: Boolean(user),
+    // Wait for the mute list so the first page is filtered too.
+    enabled: Boolean(user) && !mutedIds.isLoading,
     staleTime: 15_000,
   })
 }
 
 export function useUnreadNotificationCount() {
   const { user } = useAuth()
+  const mutedIds = useMutedIds()
+  const mutedKey = [...(mutedIds.data ?? [])].sort().join(',')
+  const ready = Boolean(user) && !mutedIds.isLoading
 
   return useQuery({
-    queryKey: queryKeys.notificationsUnread(user?.id ?? 'anon'),
-    queryFn: () => getUnreadNotificationCount(user?.id ?? ''),
-    enabled: Boolean(user),
+    queryKey: queryKeys.notificationsUnread(user?.id ?? 'anon', mutedKey),
+    queryFn: () => getUnreadNotificationCount(user?.id ?? '', mutedIds.data ?? []),
+    enabled: ready,
     staleTime: 15_000,
     refetchInterval: 60_000,
   })

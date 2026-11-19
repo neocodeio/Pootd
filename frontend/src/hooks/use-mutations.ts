@@ -12,9 +12,12 @@ import {
   deletePostImage,
   markAllNotificationsRead,
   markNotificationRead,
+  markNotificationsRead,
+  muteProfile,
   toggleBookmark,
   toggleFollow,
   toggleLike,
+  unmuteProfile,
   updatePost,
   updateProfile,
   uploadAvatar,
@@ -387,8 +390,21 @@ export function useMarkNotificationRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       if (user) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnread(user.id) })
+        queryClient.invalidateQueries({ queryKey: ['notifications-unread'] })
       }
+    },
+  })
+}
+
+/** One request for a whole "N people liked your post" group. */
+export function useMarkNotificationsRead() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (notificationIds: string[]) => markNotificationsRead(notificationIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread'] })
     },
   })
 }
@@ -405,9 +421,54 @@ export function useMarkAllNotificationsRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       if (user) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnread(user.id) })
+        queryClient.invalidateQueries({ queryKey: ['notifications-unread'] })
       }
     },
+  })
+}
+
+/** Query prefixes a mute changes: hidden authors disappear from all of them. */
+const MUTE_AFFECTED_QUERIES = [
+  ['mutes'],
+  ['feed'],
+  ['search'],
+  ['notifications'],
+  ['notifications-unread'],
+  ['top-profiles'],
+  ['user-posts'],
+  ['liked-posts'],
+  ['bookmarked-posts'],
+] as const
+
+function invalidateMuteViews(queryClient: ReturnType<typeof useQueryClient>) {
+  for (const queryKey of MUTE_AFFECTED_QUERIES) {
+    queryClient.invalidateQueries({ queryKey })
+  }
+}
+
+export function useMuteProfile() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (targetUserId: string) => {
+      if (!user) throw new Error('سجّل دخولك أولًا.')
+      return muteProfile(user.id, targetUserId)
+    },
+    onSuccess: () => invalidateMuteViews(queryClient),
+  })
+}
+
+export function useUnmuteProfile() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (targetUserId: string) => {
+      if (!user) throw new Error('سجّل دخولك أولًا.')
+      return unmuteProfile(user.id, targetUserId)
+    },
+    onSuccess: () => invalidateMuteViews(queryClient),
   })
 }
 

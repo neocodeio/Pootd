@@ -17,6 +17,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ImagePreview } from '@/components/image-preview'
+import { MutedAccounts } from '@/components/profile/muted-accounts'
 import { ThemeOptions } from '@/components/theme-options'
 import { UserAvatar } from '@/components/user-avatar'
 import { Button } from '@/components/ui/button'
@@ -655,6 +656,8 @@ export function SettingsPage() {
           </div>
           </form>
         </section>
+
+        <MutedAccounts />
 
         <section className="border-t border-border p-4 sm:p-5">
           <h2 className="text-sm font-semibold">المظهر</h2>

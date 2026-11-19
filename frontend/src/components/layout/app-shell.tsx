@@ -11,6 +11,7 @@ import { Brand } from '@/components/brand'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { UserMenu } from '@/components/layout/user-menu'
+import { FollowStep } from '@/components/onboarding/follow-step'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -162,6 +163,7 @@ export function AppShell() {
         <span>مساحة عربية للأمن السيبراني</span>
       </footer>
       <MobileNav />
+      <FollowStep />
     </div>
   )
 }

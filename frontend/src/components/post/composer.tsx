@@ -9,6 +9,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ImagePreview } from '@/components/image-preview'
+import { MentionSuggestions } from '@/components/post/mention-suggestions'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -16,8 +17,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { UserAvatar } from '@/components/user-avatar'
 import { useAuth } from '@/hooks/use-auth'
+import { useMentionAutocomplete } from '@/hooks/use-mention-autocomplete'
 import { useCreatePost } from '@/hooks/use-mutations'
-import { validatePostImage } from '@/lib/image'
+import { compressPostImage, validatePostImage } from '@/lib/image'
 import { extractTags } from '@/lib/validation'
 
 const MAX_LENGTH = 4000
@@ -48,10 +50,16 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
   const createPost = useCreatePost()
   const [content, setContent] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
+  const [preparingImage, setPreparingImage] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewOpen, setPreviewOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const mention = useMentionAutocomplete({
+    value: content,
+    onChange: setContent,
+    textareaRef,
+  })
 
   useEffect(() => {
     if (autoFocus && user && !loading) {
@@ -88,7 +96,7 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
     )
   }
 
-  const canSubmit = content.trim().length > 0 && !createPost.isPending
+  const canSubmit = content.trim().length > 0 && !createPost.isPending && !preparingImage
 
   function clearImage() {
     setImageFile(null)
@@ -97,15 +105,27 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  function chooseImage(file: File | undefined) {
+  async function chooseImage(file: File | undefined) {
     if (!file) return
 
     try {
       validatePostImage(file)
-      setImageFile(file)
-      setPreviewUrl(URL.createObjectURL(file))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'تعذّر اختيار الصورة.')
+      return
+    }
+
+    // Downscale and re-encode before upload; the original is kept if that fails.
+    setPreparingImage(true)
+    try {
+      const optimized = await compressPostImage(file)
+      setImageFile(optimized)
+      setPreviewUrl(URL.createObjectURL(optimized))
+    } catch {
+      setImageFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+    } finally {
+      setPreparingImage(false)
     }
   }
 
@@ -145,18 +165,37 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
               id="composer-content"
               ref={textareaRef}
               value={content}
-              onChange={(event) => setContent(event.target.value)}
+              onChange={(event) => {
+                setContent(event.target.value)
+                mention.syncCaret()
+              }}
+              onSelect={mention.syncCaret}
+              onClick={mention.syncCaret}
+              onKeyUp={mention.syncCaret}
+              onBlur={mention.dismiss}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
                   event.preventDefault()
                   submit()
+                  return
                 }
+                mention.handleKeyDown(event)
               }}
+              {...mention.controlProps}
               placeholder="شارك اكتشافًا، أداة، أو سؤالًا…"
               maxLength={MAX_LENGTH}
               rows={2}
               dir="auto"
               className="min-h-24 resize-none border-0 bg-transparent p-0 px-1 text-[15px] leading-7 shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
+            />
+
+            <MentionSuggestions
+              open={mention.open}
+              options={mention.options}
+              activeIndex={mention.activeIndex}
+              listboxId={mention.listboxId}
+              onHover={mention.setActiveIndex}
+              onSelect={mention.select}
             />
 
             {previewUrl ? (
@@ -178,7 +217,7 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
                   variant="secondary"
                   size="icon-sm"
                   onClick={clearImage}
-                  disabled={createPost.isPending}
+                  disabled={createPost.isPending || preparingImage}
                   aria-label="إزالة الصورة"
                   className="absolute top-2 end-2 rounded-full bg-background/90 text-foreground hover:bg-background"
                 >
@@ -198,7 +237,7 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
                   accept="image/png,image/jpeg,image/webp"
                   className="sr-only"
                   onChange={(event) => {
-                    chooseImage(event.target.files?.[0])
+                    void chooseImage(event.target.files?.[0])
                     event.currentTarget.value = ''
                   }}
                 />
@@ -207,11 +246,14 @@ export function Composer({ autoFocus = false }: { autoFocus?: boolean }) {
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={createPost.isPending}
-                  aria-label="إضافة صورة"
+                  disabled={createPost.isPending || preparingImage}
+                  aria-label={preparingImage ? 'جارٍ تجهيز الصورة' : 'إضافة صورة'}
                   className="rounded-full text-muted-foreground hover:text-foreground"
                 >
-                  <HugeiconsIcon icon={ImageAdd01Icon} className="size-4" />
+                  <HugeiconsIcon
+                    icon={preparingImage ? Loading03Icon : ImageAdd01Icon}
+                    className={preparingImage ? 'size-4 animate-spin' : 'size-4'}
+                  />
                 </Button>
               </div>
               <Button type="submit" size="sm" className="rounded-full px-4" disabled={!canSubmit}>
