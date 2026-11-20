@@ -6,6 +6,7 @@ import {
   getComments,
   getFeed,
   getFollowState,
+  getFollowingIds,
   getFollows,
   getLikedPostIds,
   getLikedPosts,
@@ -28,14 +29,57 @@ import { queryKeys } from '@/lib/query-keys'
 import type { Cursor, SortOption } from '@/lib/types'
 import { useAuth } from './use-auth'
 
-export function useFeed(tag: string | undefined, sort: SortOption) {
+export function useFeed(tag: string | undefined, sort: SortOption, enabled = true) {
   return useInfiniteQuery({
     queryKey: queryKeys.feed(tag, sort),
     queryFn: ({ pageParam }) => getFeed({ tag, sort, cursor: pageParam }),
     initialPageParam: null as Cursor | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled,
     staleTime: 30_000,
   })
+}
+
+/** Everyone the viewer follows, for the «متابعات» feed. */
+export function useFollowingIds(userId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.followingIds(userId ?? 'anon'),
+    queryFn: () => getFollowingIds(userId ?? ''),
+    enabled: Boolean(userId) && enabled,
+    staleTime: 60_000,
+  })
+}
+
+/**
+ * «متابعات» — posts from the members the viewer follows, plus their own posts.
+ * PostgREST cannot subquery `follows`, so the ids load first and the feed waits
+ * for them (`isPreparing` keeps the skeleton up); the ids are part of the query
+ * key, so follows and unfollows swap in a fresh timeline on their own.
+ */
+export function useFollowingFeed(enabled = true) {
+  const { user } = useAuth()
+  const following = useFollowingIds(user?.id, enabled)
+  const followingIds = following.data ?? []
+  const idsKey = [...followingIds].sort().join(',')
+  const authorIds =
+    user && followingIds.length > 0 ? [...new Set([user.id, ...followingIds])] : []
+
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.followingFeed(user?.id ?? 'anon', idsKey),
+    queryFn: ({ pageParam }) => getFeed({ authorIds, cursor: pageParam }),
+    initialPageParam: null as Cursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    // Wait for the follow list so the first page is already scoped.
+    enabled: Boolean(user) && enabled && !following.isLoading,
+    staleTime: 30_000,
+  })
+
+  return {
+    ...query,
+    isPreparing: following.isLoading,
+    followingError: following.error,
+    followingCount: followingIds.length,
+  }
 }
 
 export function usePost(postId: string) {

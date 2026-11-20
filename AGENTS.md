@@ -81,10 +81,37 @@ not "fix" them back without asking:
 | Brand lockup | wordmark `h-7` (`120×28`) + tagline `مجتمع الأمن السيبراني` at `text-[11px]` with `mt-1`, aligned to the end edge |
 | Create button | `h-10 rounded-full px-5`, primary fill, `PencilEdit02Icon` + "أنشئ منشور" |
 | Feed column | `max-w-2xl` centred, `px-4 sm:px-6`, vertical rhythm `space-y-4` |
-| Page header | subtitle `text-sm` on the start (right) edge (title is screen-reader only — see overrides); segmented tabs on the end (left) edge |
+| Page header | subtitle `text-sm` on the start (right) edge (title is screen-reader only — see overrides); segmented tabs (الكل / متابعات / الأعلى) on the end (left) edge |
 | Segmented tabs | track `h-8 rounded-full p-[3px] bg-secondary/60`; trigger `rounded-full px-3.5 text-sm`, active `bg-secondary shadow-sm` |
 | Cards | `rounded-2xl border border-border bg-card`, `p-4 sm:p-5` |
 | Footer | hidden below `lg`, single row, `text-xs text-muted-foreground` |
+
+## Feed scopes (approved)
+
+`pages/feed.tsx` keeps **one** segmented track with three pills, in this order:
+**الكل / متابعات / الأعلى** (same `h-8` track and `px-3.5` triggers as the
+reference). `الكل` stays the default — the whole community, newest first —
+`الأعلى` is unchanged (most liked), and `متابعات` is the member's own timeline.
+
+- `متابعات` only renders for a signed-in member; a guest sees two pills, and the
+  scope falls back to `الكل` if they sign out while it is selected.
+- The following timeline is the posts of the members you follow **plus your
+  own**, newest first, infinite-scrolled like every other feed. PostgREST cannot
+  subquery `follows`, so `useFollowingFeed` loads the follow ids first
+  (`getFollowingIds`) and hands them to `getFeed({ authorIds })`. Lists longer
+  than 120 ids are split into parallel `in.()` chunks and merged back into one
+  page by `lib/feed.ts` (dedupe + the same ordering SQL used), so the request
+  URL never outgrows PostgREST's limit.
+- The follow ids are part of the query key, so following or unfollowing swaps in
+  a fresh timeline on its own; the existing `['feed']` invalidations (new post,
+  like, delete) already cover this timeline.
+- Empty states: nobody followed → «لم تتابع أحدًا بعد» with an «استكشف الأعضاء»
+  pill to `/explore`; follows but no posts → «ما فيه منشورات من متابعاتك بعد».
+- Subtitles: الكل «آخر ما ينشره المجتمع.»، متابعات «آخر ما ينشره من تتابعهم.»،
+  الأعلى «المنشورات الأكثر إعجابًا.».
+- The header row is unchanged: subtitle on the start edge, three pills on the
+  same line on the end edge. It still fits a 390px viewport (subtitle 127px +
+  track 194px); on very narrow screens the subtitle wraps instead of the track.
 
 ## Explore page (approved)
 

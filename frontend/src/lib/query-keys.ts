@@ -2,6 +2,9 @@ import type { SortOption } from './types'
 
 export const queryKeys = {
   feed: (tag: string | undefined, sort: SortOption) => ['feed', tag ?? '', sort] as const,
+  followingFeed: (userId: string, idsKey: string) =>
+    ['feed', 'following', userId, idsKey] as const,
+  followingIds: (userId: string) => ['follows', userId, 'ids'] as const,
   post: (postId: string) => ['post', postId] as const,
   comments: (postId: string) => ['comments', postId] as const,
   likedIds: (userId: string, idsKey: string) => ['liked-ids', userId, idsKey] as const,

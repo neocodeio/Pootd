@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { chunkIds, mergeFeedRows } from './feed'
 import { postImageExtension, validatePostImage } from './image'
 import type {
   CommentWithAuthor,
@@ -49,21 +50,57 @@ export async function getFeed(
     sort?: SortOption
     limit?: number
     cursor?: Cursor | null
+    /** Restricts the feed to these authors — the «متابعات» feed. */
+    authorIds?: string[]
   } = {},
 ): Promise<Page<PostWithAuthor>> {
   const limit = options.limit ?? PAGE_SIZE
   const cursor = options.cursor ?? null
+  const sort = options.sort ?? 'new'
 
+  // PostgREST has no subquery, so the following feed passes its author list as
+  // an `in.()` literal. Long lists are split and merged back into one page.
+  const chunks =
+    options.authorIds === undefined
+      ? [undefined]
+      : chunkIds([...new Set(options.authorIds)])
+
+  // Following nobody: answer locally instead of sending an empty `in.()`.
+  if (chunks.length === 0) return { items: [], nextCursor: null }
+
+  const pages = await Promise.all(
+    chunks.map((authorIds) =>
+      fetchFeedRows({ tag: options.tag, sort, cursor, limit, authorIds }),
+    ),
+  )
+
+  return toPage(mergeFeedRows(pages.flat(), sort), limit, cursorOf)
+}
+
+/** One page of rows for a single author chunk, newest or most liked first. */
+async function fetchFeedRows(options: {
+  tag?: string
+  sort: SortOption
+  cursor: Cursor | null
+  limit: number
+  authorIds?: string[]
+}): Promise<PostWithAuthor[]> {
   let query = supabase
     .from('posts')
     .select('*, author:profiles!posts_author_id_fkey(*)')
-    .limit(limit + 1)
+    .limit(options.limit + 1)
 
   if (options.tag) {
     query = query.contains('tags', [normalizeTag(options.tag)])
   }
 
-  if (options.sort === 'top') {
+  if (options.authorIds) {
+    query = query.in('author_id', options.authorIds)
+  }
+
+  const { cursor, sort } = options
+
+  if (sort === 'top') {
     if (cursor) {
       const likeCount = cursor.like_count ?? 0
       const at = toIso(cursor.created_at)
@@ -93,7 +130,7 @@ export async function getFeed(
 
   const { data, error } = await query
   throwIfError(error)
-  return toPage((data ?? []) as unknown as PostWithAuthor[], limit, cursorOf)
+  return (data ?? []) as unknown as PostWithAuthor[]
 }
 
 
@@ -526,6 +563,23 @@ export async function getFollows(
         ? { created_at: last.created_at, id: lastEdgeId }
         : null,
   }
+}
+
+/**
+ * Everyone this user follows. The following feed turns these ids into one
+ * `in.()` filter, so the list is capped at PostgREST's default row ceiling.
+ */
+export async function getFollowingIds(userId: string): Promise<string[]> {
+  if (!userId) return []
+
+  const { data, error } = await supabase
+    .from('follows')
+    .select('following_id')
+    .eq('follower_id', userId)
+    .limit(1000)
+
+  throwIfError(error)
+  return ((data ?? []) as { following_id: string }[]).map((row) => row.following_id)
 }
 
 export async function getFollowState(
