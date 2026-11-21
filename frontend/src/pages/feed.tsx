@@ -64,11 +64,11 @@ export function FeedPage() {
         <Tabs value={active} onValueChange={(value) => setScope(value as FeedScope)}>
           <TabsList>
             <TabsTrigger value="all" className="px-3.5">
-              الكل
+              الأحدث
             </TabsTrigger>
             {user ? (
               <TabsTrigger value="following" className="px-3.5">
-                اتابعه
+                أتابعهم
               </TabsTrigger>
             ) : null}
             <TabsTrigger value="top" className="px-3.5">

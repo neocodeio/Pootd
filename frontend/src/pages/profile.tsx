@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '@/components/empty-state'
 import { PostList } from '@/components/post/post-list'
+import { ProfileExpertise } from '@/components/profile/profile-expertise'
 import { ProfileHeader } from '@/components/profile/profile-header'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -126,6 +127,7 @@ export function ProfilePage() {
   return (
     <div className="space-y-4">
       <ProfileHeader profile={profile} stats={statsQuery.data} isOwn={isOwn} />
+      <ProfileExpertise profile={profile} />
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as ProfileTab)}>
         <TabsList className="w-fit">

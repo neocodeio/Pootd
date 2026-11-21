@@ -304,6 +304,48 @@ account URL or a text link for these.
   into the list once. `profiles.github` stays for history but is no longer
   shown or edited anywhere in the UI.
 
+## Profile expertise (approved)
+
+A profile can show skills, the tools it works with, and certifications or
+achievements. The panel
+(`components/profile/profile-expertise.tsx`) sits **between `ProfileHeader` and
+the tab track** and renders nothing at all when all three lists are empty, so
+existing profiles are unchanged.
+
+- Card shell matches the profile header: `rounded-xl border border-border
+  bg-card p-4 sm:p-5`, heading «الخبرة والشهادات» (`text-sm font-semibold`).
+- Three groups, each with a muted icon heading (`text-xs font-medium
+  text-muted-foreground`, icon `size-3.5`): «المهارات ومجالات الخبرة»
+  (`SecurityCheckIcon`), «الأدوات» (`CommandLineIcon`) and «الشهادات
+  والإنجازات» (`Award01Icon`).
+- Skills and tools are chips (`rounded-full border border-border
+  bg-secondary/40 px-3 py-1 text-sm leading-6`, `dir="auto"`); never pill rows,
+  never a comma-joined paragraph.
+- A certification row is a `size-8 rounded-full bg-secondary` award icon, the
+  title (`text-sm font-medium`), then `issuer · year` in
+  `text-xs text-muted-foreground`. A saved link wraps the title in an
+  `https` anchor (`target="_blank"`, `rel="noreferrer noopener"`) with a
+  trailing `Link04Icon`.
+- Settings edits all three inside the existing profile form, in a
+  «الخبرة والشهادات» block after the social accounts: two chip editors
+  (`LabelListEditor`) with `n/12` counters and a row editor
+  (`CertificationsEditor`) with an `n/6` counter and «إضافة شهادة».
+  Enter, `,` or `،` adds a chip; Backspace on an empty field removes the last
+  one; a chip's `Cancel01Icon` removes it. Each certificate row has title,
+  optional issuer, optional four-digit year (digits only) and optional link.
+- Limits, mirrored by `0020_profile_expertise.sql`: `skills` and `tools` are
+  `text[]` with at most 12 labels of 30 characters, no case-insensitive
+  duplicates; `certifications` is `jsonb` with at most 6 entries, a required
+  title of 1–60 characters, issuer ≤ 60, year 1970–2100 or empty, and an
+  `https` link ≤ 2048. Empty certificate rows are ignored instead of blocking
+  the form.
+- Rules and parsers live in `lib/expertise.ts` (+ `expertise.test.ts`).
+  `parseSkills` / `parseTools` / `parseCertifications` drop junk and return
+  `[]` for a missing column, so the profile keeps rendering before the
+  migration has been run.
+- The three columns are not part of `search_text` yet; searching skills or
+  tools would need another generated column.
+
 ## Share dialog (approved)
 
 `components/post/share-dialog.tsx` — a post's last action-row button opens it;

@@ -49,6 +49,16 @@ export interface SocialLink {
   url: string
 }
 
+/** One award on the profile: a certification, a course or an achievement. */
+export interface Certification {
+  title: string
+  issuer: string
+  /** Four-digit year, or an empty string when the member left it out. */
+  year: string
+  /** Optional https link to the certificate itself. */
+  url: string
+}
+
 export interface Profile {
   id: string
   username: string
@@ -59,6 +69,12 @@ export interface Profile {
   website: string
   github: string
   social_links: SocialLink[]
+  /** Expertise labels shown on the profile card (at most 12). */
+  skills: string[]
+  /** Tools and platforms the member works with (at most 12). */
+  tools: string[]
+  /** Certifications and achievements, in the order the member saved them. */
+  certifications: Certification[]
   /** Maintained by the `follows` triggers — never derived from a fetched list. */
   followers_count: number
   following_count: number
@@ -115,4 +131,7 @@ export interface ProfileUpdate {
   website: string
   github: string
   social_links: SocialLink[]
+  skills: string[]
+  tools: string[]
+  certifications: Certification[]
 }

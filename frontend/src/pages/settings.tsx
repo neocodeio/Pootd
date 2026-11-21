@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight01Icon,
   Cancel01Icon,
+  CommandLineIcon,
   Delete02Icon,
   Image01Icon,
   Key01Icon,
@@ -11,12 +12,17 @@ import {
   Logout01Icon,
   Mail01Icon,
   PlusSignIcon,
+  SecurityCheckIcon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { ImagePreview } from '@/components/image-preview'
+import {
+  CertificationsEditor,
+  LabelListEditor,
+} from '@/components/profile/expertise-editor'
 import { MutedAccounts } from '@/components/profile/muted-accounts'
 import { ThemeOptions } from '@/components/theme-options'
 import { UserAvatar } from '@/components/user-avatar'
@@ -35,6 +41,13 @@ import {
 } from '@/hooks/use-mutations'
 import { supabase } from '@/lib/supabase'
 import {
+  parseCertifications,
+  parseSkills,
+  parseTools,
+  prepareCertifications,
+  prepareLabels,
+} from '@/lib/expertise'
+import {
   MAX_SOCIAL_LINKS,
   parseSocialLinks,
   prepareSocialLinks,
@@ -48,7 +61,7 @@ import {
   normalizeUsername,
   USERNAME_REGEX,
 } from '@/lib/validation'
-import type { SocialLink, SocialPlatform } from '@/lib/types'
+import type { Certification, SocialLink, SocialPlatform } from '@/lib/types'
 
 interface FormState {
   displayName: string
@@ -56,6 +69,9 @@ interface FormState {
   bio: string
   website: string
   socialLinks: SocialLink[]
+  skills: string[]
+  tools: string[]
+  certifications: Certification[]
 }
 
 export function SettingsPage() {
@@ -77,6 +93,9 @@ export function SettingsPage() {
     bio: '',
     website: '',
     socialLinks: [],
+    skills: [],
+    tools: [],
+    certifications: [],
   })
   const [error, setError] = useState('')
   const [coverPreviewOpen, setCoverPreviewOpen] = useState(false)
@@ -96,6 +115,9 @@ export function SettingsPage() {
         bio: profile.bio,
         website: profile.website,
         socialLinks: parseSocialLinks(profile.social_links),
+        skills: parseSkills(profile.skills),
+        tools: parseTools(profile.tools),
+        certifications: parseCertifications(profile.certifications),
       })
     }
   }, [profile])
@@ -129,6 +151,9 @@ export function SettingsPage() {
     const bio = form.bio.trim()
     const website = normalizeUrl(form.website)
     const social = prepareSocialLinks(form.socialLinks)
+    const skills = prepareLabels(form.skills, 'المهارات')
+    const tools = prepareLabels(form.tools, 'الأدوات')
+    const certifications = prepareCertifications(form.certifications)
 
     if (displayName.length < 1 || displayName.length > 48) {
       setError('الاسم الظاهر لازم يكون من 1 إلى 48 حرفًا.')
@@ -150,6 +175,18 @@ export function SettingsPage() {
       setError(social.error)
       return
     }
+    if (skills.error) {
+      setError(skills.error)
+      return
+    }
+    if (tools.error) {
+      setError(tools.error)
+      return
+    }
+    if (certifications.error) {
+      setError(certifications.error)
+      return
+    }
 
     updateProfile.mutate(
       {
@@ -158,6 +195,9 @@ export function SettingsPage() {
         bio,
         website,
         social_links: social.links,
+        skills: skills.labels,
+        tools: tools.labels,
+        certifications: certifications.certifications,
       },
       {
         onSuccess: (updated) => {
@@ -167,6 +207,9 @@ export function SettingsPage() {
             bio: updated.bio,
             website: updated.website,
             socialLinks: parseSocialLinks(updated.social_links),
+            skills: parseSkills(updated.skills),
+            tools: parseTools(updated.tools),
+            certifications: parseCertifications(updated.certifications),
           })
           toast.success('تم تحديث الملف')
         },
@@ -631,6 +674,44 @@ export function SettingsPage() {
                   حتى {MAX_SOCIAL_LINKS} حسابات فقط، وتظهر كأيقونات في ملفك.
                 </span>
               </div>
+            </div>
+
+            <div className="grid gap-5 border-t border-border pt-5">
+              <div>
+                <h3 className="text-sm font-medium">الخبرة والشهادات</h3>
+                <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                  أضف مهاراتك وأدواتك وشهاداتك، وتظهر في ملفك العام تحت بياناتك.
+                </p>
+              </div>
+
+              <LabelListEditor
+                id="skills"
+                label="المهارات ومجالات الخبرة"
+                icon={SecurityCheckIcon}
+                placeholder="مثال: أمن الشبكات"
+                values={form.skills}
+                onChange={(skills) =>
+                  setForm((current) => ({ ...current, skills }))
+                }
+              />
+
+              <LabelListEditor
+                id="tools"
+                label="الأدوات"
+                icon={CommandLineIcon}
+                placeholder="مثال: Wireshark"
+                values={form.tools}
+                onChange={(tools) =>
+                  setForm((current) => ({ ...current, tools }))
+                }
+              />
+
+              <CertificationsEditor
+                rows={form.certifications}
+                onChange={(certifications) =>
+                  setForm((current) => ({ ...current, certifications }))
+                }
+              />
             </div>
 
             {error ? (
