@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  ChartAnalysisIcon,
   Logout01Icon,
   Settings01Icon,
   UserIcon,
@@ -83,6 +84,12 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
           <Link to={profilePath}>
             <HugeiconsIcon icon={UserIcon} />
             ملفي الشخصي
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="rounded-md px-2 py-2">
+          <Link to="/activity">
+            <HugeiconsIcon icon={ChartAnalysisIcon} />
+            لوحة النشاط
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="rounded-md px-2 py-2">

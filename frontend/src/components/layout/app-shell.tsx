@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import {
+  ChartAnalysisIcon,
   DiscoverCircleIcon,
   Home03Icon,
   PencilEdit02Icon,
@@ -67,6 +68,14 @@ function DesktopHeader() {
             <HeaderLink to="/explore" icon={<HugeiconsIcon icon={DiscoverCircleIcon} className="size-4" />}>
               استكشف
             </HeaderLink>
+            {user ? (
+              <HeaderLink
+                to="/activity"
+                icon={<HugeiconsIcon icon={ChartAnalysisIcon} className="size-4" />}
+              >
+                نشاطي
+              </HeaderLink>
+            ) : null}
             {user && profile ? (
               <HeaderLink
                 to={`/u/${profile.username}`}

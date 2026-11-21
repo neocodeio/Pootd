@@ -63,9 +63,11 @@ not "fix" them back without asking:
   (`bg-foreground text-background`), never `--like` red.
 - **Search lives on Explore.** The search field and its results are part of the
   Explore page (`/explore?q=…`); `/search` redirects there with the query
-  intact and the old search page is gone. The header nav is therefore three
-  items (الرئيسية / استكشف / ملفي) and the mobile bottom bar is four
-  (الرئيسية، استكشف، أنشئ، حسابي). The desktop chrome (header, footer,
+  intact and the old search page is gone. The header nav is therefore
+  الرئيسية / استكشف / ملفي, with نشاطي (`ChartAnalysisIcon`, → `/activity`) added
+  between استكشف and ملفي for a signed-in member. The mobile bottom bar is four
+  cells for a guest (الرئيسية، استكشف، أنشئ، دخول) and five for a member
+  (الرئيسية، استكشف، أنشئ، نشاطي، حسابي). The desktop chrome (header, footer,
   `lg:pb-12`, the mobile-bar swap) still starts at `lg`; below it the compact
   mobile header and bottom nav are used.
 
@@ -76,12 +78,12 @@ not "fix" them back without asking:
 | Page background | `bg-background` — flat, no gradients, no shadows on the page |
 | Header | `h-16`, `max-w-5xl`, `px-6`, `border-b border-border/80`, `bg-background/80 backdrop-blur-xl` |
 | Header start group (left) | theme toggle → "أنشئ منشور" pill → user avatar (`size-11`) |
-| Header end group (right) | brand lockup → nav (الرئيسية / استكشف / ملفي) |
+| Header end group (right) | brand lockup → nav (الرئيسية / استكشف / ملفي, plus نشاطي for a signed-in member) |
 | Header nav | `gap-1`; items `h-9 rounded-full px-3.5 py-2 gap-2 text-sm font-medium`, icon `size-4`; active item `bg-secondary` |
 | Brand lockup | wordmark `h-7` (`120×28`) + tagline `مجتمع الأمن السيبراني` at `text-[11px]` with `mt-1`, aligned to the end edge |
 | Create button | `h-10 rounded-full px-5`, primary fill, `PencilEdit02Icon` + "أنشئ منشور" |
 | Feed column | `max-w-2xl` centred, `px-4 sm:px-6`, vertical rhythm `space-y-4` |
-| Page header | subtitle `text-sm` on the start (right) edge (title is screen-reader only — see overrides); segmented tabs (الكل / متابعات / الأعلى) on the end (left) edge |
+| Page header | subtitle `text-sm` on the start (right) edge (title is screen-reader only — see overrides); segmented tabs (الأحدث / أتابعهم / الأعلى) on the end (left) edge |
 | Segmented tabs | track `h-8 rounded-full p-[3px] bg-secondary/60`; trigger `rounded-full px-3.5 text-sm`, active `bg-secondary shadow-sm` |
 | Cards | `rounded-2xl border border-border bg-card`, `p-4 sm:p-5` |
 | Footer | hidden below `lg`, single row, `text-xs text-muted-foreground` |
@@ -89,12 +91,12 @@ not "fix" them back without asking:
 ## Feed scopes (approved)
 
 `pages/feed.tsx` keeps **one** segmented track with three pills, in this order:
-**الكل / متابعات / الأعلى** (same `h-8` track and `px-3.5` triggers as the
-reference). `الكل` stays the default — the whole community, newest first —
-`الأعلى` is unchanged (most liked), and `متابعات` is the member's own timeline.
+**الأحدث / أتابعهم / الأعلى** (same `h-8` track and `px-3.5` triggers as the
+reference). `الأحدث` stays the default — the whole community, newest first —
+`الأعلى` is unchanged (most liked), and `أتابعهم` is the member's own timeline.
 
-- `متابعات` only renders for a signed-in member; a guest sees two pills, and the
-  scope falls back to `الكل` if they sign out while it is selected.
+- `أتابعهم` only renders for a signed-in member; a guest sees two pills, and the
+  scope falls back to `الأحدث` if they sign out while it is selected.
 - The following timeline is the posts of the members you follow **plus your
   own**, newest first, infinite-scrolled like every other feed. PostgREST cannot
   subquery `follows`, so `useFollowingFeed` loads the follow ids first
@@ -107,7 +109,7 @@ reference). `الكل` stays the default — the whole community, newest first �
   like, delete) already cover this timeline.
 - Empty states: nobody followed → «لم تتابع أحدًا بعد» with an «استكشف الأعضاء»
   pill to `/explore`; follows but no posts → «ما فيه منشورات من متابعاتك بعد».
-- Subtitles: الكل «آخر ما ينشره المجتمع.»، متابعات «آخر ما ينشره من تتابعهم.»،
+- Subtitles: الأحدث «آخر ما ينشره المجتمع.»، أتابعهم «آخر ما ينشره من تتابعهم.»،
   الأعلى «المنشورات الأكثر إعجابًا.».
 - The header row is unchanged: subtitle on the start edge, three pills on the
   same line on the end edge. It still fits a 390px viewport (subtitle 127px +
@@ -346,6 +348,41 @@ existing profiles are unchanged.
 - The three columns are not part of `search_text` yet; searching skills or
   tools would need another generated column.
 
+## Activity dashboard (approved)
+
+`pages/activity.tsx` at `/activity` is the member's own dashboard: personal
+statistics, the newest posts from the people they follow, and their own latest
+contributions. It is signed-in only (`RequireAuth`) and reached from the
+«نشاطي» item in the header nav and the mobile bottom bar (and from the account
+menu as «لوحة النشاط»).
+
+- Page header: «لوحة النشاط» (`font-heading text-xl font-semibold
+  tracking-tight`), subtitle «إحصائياتك، وآخر مساهماتك، ومنشورات من تتابعهم.»,
+  and «عضو منذ …» (`formatJoined`) on the end edge.
+- Three sections, each with a `text-sm font-semibold` heading and its content
+  in one `Card` (page-level cards keep the feed's `rounded-2xl`).
+- «إحصائياتك» is a single `Card` used as `grid grid-cols-2 gap-px bg-border
+  sm:grid-cols-4`: four hairline tiles (`bg-card px-4 py-3`), label
+  `text-[11px] text-muted-foreground`, value `text-xl font-semibold
+  tabular-nums`. Values come from `get_profile_stats` (posts / likes received /
+  comments) and the trigger-maintained `profiles.followers_count` — never
+  derived from a fetched list. Missing stats show a `Skeleton`, not a zero.
+- «من متابعاتك» lists the newest three posts of `useFollowingFeed`, with the
+  member's own posts and every muted author removed (`useMutedIds`), each row an
+  avatar, name + verified badge, `@username · time` and a two-line excerpt.
+  Empty: «لم تتابع أحدًا بعد.» + «استكشف الأعضاء» pill when
+  `followingCount === 0`, otherwise «ما فيه منشورات من متابعاتك بعد.».
+- «مساهماتك» lists the newest three of the member's own posts with a
+  three-line excerpt, the time, and the row `like_count` / `comment_count`
+  (heart and comment icons, `tabular-nums`), plus «صورة» when the post has an
+  image. Empty: «ما نشرت شي بعد.» + «اكتب منشورًا» to `/#compose`; the heading
+  links «كل منشوراتك» to `/u/:username`.
+- Rows are whole-row links to `/p/:id` (the same pattern as notifications),
+  `hover:bg-secondary/40`, with a `ChevronLeftIcon` on the end edge. No action
+  buttons live here.
+- No new tables or migration: every number already exists on a row or in a
+  SQL aggregate.
+
 ## Share dialog (approved)
 
 `components/post/share-dialog.tsx` — a post's last action-row button opens it;
@@ -416,9 +453,9 @@ muter. Not a block — real blocking would need RLS changes on `posts`/`comments
   "إلغاء الكتم" pill.
 - Filtering: `PostList` drops muted authors client-side (`excludeMuted`, default
   true; profile tabs pass `excludeMuted={false}` so a profile still shows its own
-  content). `TopUsers` and Explore member results filter the same ids.
-  Notifications and the unread count filter server-side with
-  `.not('actor_id', 'in', …)`.
+  content). `TopUsers`, Explore member results and the activity dashboard's
+  «من متابعاتك» list filter the same ids. Notifications and the unread count
+  filter server-side with `.not('actor_id', 'in', …)`.
 - Data lives in `lib/api.ts` (`getMutedIds`, `getMutedProfiles`, `muteProfile`,
   `unmuteProfile`) with `useMutedIds` / `useMutedProfiles` and
   `useMuteProfile` / `useUnmuteProfile`; a mute invalidates feed, search,

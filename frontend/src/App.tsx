@@ -48,6 +48,11 @@ const NotificationsPage = lazy(() =>
     default: module.NotificationsPage,
   })),
 )
+const ActivityPage = lazy(() =>
+  import('@/pages/activity').then((module) => ({
+    default: module.ActivityPage,
+  })),
+)
 const ResetPage = lazy(() =>
   import('@/pages/reset').then((module) => ({ default: module.ResetPage })),
 )
@@ -116,6 +121,14 @@ export default function App() {
                   element={
                     <RequireAuth>
                       <NotificationsPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="activity"
+                  element={
+                    <RequireAuth>
+                      <ActivityPage />
                     </RequireAuth>
                   }
                 />
